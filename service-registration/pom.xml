@@ -2,12 +2,12 @@
   <parent>
     <groupId>org.opennms</groupId>
     <artifactId>org.opennms.lib</artifactId>
-    <version>3-SNAPSHOT</version>
+    <version>2-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.opennms.lib</groupId>
   <artifactId>org.opennms.lib.service-registration</artifactId>
-  <version>2.0.1-SNAPSHOT</version>
+  <version>2.0.0-SNAPSHOT</version>
   <description>service registration and unregistration</description>
   <name>Service Registration for Applications</name>
 
