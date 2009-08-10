@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.opennms.lib</groupId>
     <artifactId>org.opennms.lib.snmp</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>2.0.0</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.opennms.lib.snmp</groupId>
@@ -10,9 +10,9 @@
   <name>OpenNMS JoeSNMP SNMP Implementation</name>
 
   <scm>
-    <connection>scm:svn:http://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/trunk/org.opennms.lib/snmp/joesnmp</connection>
-    <developerConnection>scm:svn:https://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/trunk/org.opennms.lib/snmp/joesnmp</developerConnection>
-    <url>http://opennms.svn.sourceforge.net/viewvc/opennms/org.opennms/trunk/org.opennms.lib/snmp/joesnmp</url>
+    <connection>scm:svn:http://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/tags/org.opennms.lib-2/snmp/joesnmp</connection>
+    <developerConnection>scm:svn:https://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/tags/org.opennms.lib-2/snmp/joesnmp</developerConnection>
+    <url>http://opennms.svn.sourceforge.net/viewvc/opennms/org.opennms/tags/org.opennms.lib-2/snmp/joesnmp</url>
   </scm>
 
   <dependencies>
