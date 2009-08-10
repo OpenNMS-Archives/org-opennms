@@ -89,9 +89,9 @@
   </mailingLists>
 
   <scm>
-    <connection>scm:svn:https://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/trunk</connection>
-    <developerConnection>scm:svn:https://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/trunk</developerConnection>
-    <url>http://opennms.svn.sourceforge.net/viewvc/opennms/org.opennms/trunk</url>
+    <connection>scm:svn:https://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/tags/org.opennms.root-1</connection>
+    <developerConnection>scm:svn:https://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/tags/org.opennms.root-1</developerConnection>
+    <url>http://opennms.svn.sourceforge.net/viewvc/opennms/org.opennms/tags/org.opennms.root-1</url>
   </scm>
 
   <build>
