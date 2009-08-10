@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.opennms</groupId>
+  <artifactId>parent</artifactId>
+  <version>1</version>
+  <packaging>pom</packaging>
+  <name>OpenNMS Parent</name>
+  <description>
+    OpenNMS is the world's first enterprise grade network management
+    platform developed under the open source model. It consists of a
+    community supported open-source project as well as a commercial
+    services, training and support organization. 
+  </description>
+  <issueManagement>
+    <system>Bugzilla</system>
+    <url>http://bugs.opennms.org/</url>
+  </issueManagement>  
+  <ciManagement>
+    <system>Bamboo</system>
+    <url>http://bamboo.internal.opennms.com:8085/</url>
+    <notifiers>
+      <notifier>
+        <type>htmlmail</type>
+        <address>ci@lists.opennms.com</address>
+      </notifier>
+    </notifiers>
+  </ciManagement>
+  <developers>
+    <developer>
+      <id>brozow</id>
+      <name>Matt Brozowski</name>
+      <email>brozow@opennms.org</email>
+      <roles>
+        <role>OGP Member</role>
+        <role>Software Architect</role>
+      </roles>
+      <organization>The OpenNMS Group</organization>
+      <timezone>-5</timezone>
+    </developer>
+    <developer>
+      <id>rangerrick</id>
+      <name>Benjamin Reed</name>
+      <email>ranger@opennms.org</email>
+      <roles>
+        <role>OGP Member</role>
+        <role>Software Developer</role>
+      </roles>
+      <organization>The OpenNMS Group</organization>
+      <timezone>-5</timezone>
+    </developer>
+  </developers>
+  <mailingLists>
+    <mailingList>
+      <name>OpenNMS Discuss List</name>
+      <subscribe>https://lists.sourceforge.net/lists/listinfo/opennms-discuss</subscribe>
+      <unsubscribe>https://lists.sourceforge.net/lists/listinfo/opennms-discuss</unsubscribe>
+      <post>opennms-discuss@lists.sourcforge.net</post>
+      <archive>http://sourceforge.net/mailarchive/forum.php?forum=opennms-discuss</archive>
+    </mailingList>
+    <mailingList>
+      <name>OpenNMS Developer's List</name>
+      <subscribe>https://lists.sourceforge.net/lists/listinfo/opennms-devel</subscribe>
+      <unsubscribe>https://lists.sourceforge.net/lists/listinfo/opennms-devel</unsubscribe>
+      <post>opennms-devel@lists.sourcforge.net</post>
+      <archive>http://sourceforge.net/mailarchive/forum.php?forum=opennms-devel</archive>
+    </mailingList>
+    <mailingList>
+      <name>OpenNMS Install Help List</name>
+      <subscribe>https://lists.sourceforge.net/lists/listinfo/opennms-install</subscribe>
+      <unsubscribe>https://lists.sourceforge.net/lists/listinfo/opennms-install</unsubscribe>
+      <post>opennms-install@lists.sourcforge.net</post>
+      <archive>http://sourceforge.net/mailarchive/forum.php?forum=opennms-install</archive>
+    </mailingList>
+    <mailingList>
+      <name>OpenNMS Source Control List</name>
+      <subscribe>https://lists.sourceforge.net/lists/listinfo/opennms-cvs</subscribe>
+      <unsubscribe>https://lists.sourceforge.net/lists/listinfo/opennms-cvs</unsubscribe>
+      <post>opennms-cvs@lists.sourcforge.net</post>
+      <archive>http://sourceforge.net/mailarchive/forum.php?forum=opennms-cvs</archive>
+    </mailingList>
+  </mailingLists>
+<!--
+  <scm>
+    <connection>scm:svn:https://opennms.svn.sourceforge.net/svnroot/opennms/opennms/trunk</connection>
+    <developerConnection>scm:svn:https://opennms.svn.sourceforge.net/svnroot/opennms/opennms/trunk</developerConnection>
+    <url>http://opennms.svn.sourceforge.net/viewvc/opennms/opennms/trunk</url>
+  </scm>
+-->
+  <repositories>
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <id>opennms-repo</id>
+      <name>OpenNMS Repository</name>
+      <url>http://repo.opennms.org/maven2</url>
+    </repository>
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <id>opennms-releases</id>
+      <name>OpenNMS Maven Release Repository</name>
+      <url>http://repo.opennms.org/releases</url>
+    </repository>
+    <repository>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <id>opennms-snapshots</id>
+      <name>OpenNMS Repository</name>
+      <url>http://repo.opennms.org/snapshots</url>
+    </repository>
+  </repositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <id>opennms-repo</id>
+      <name>OpenNMS Repository</name>
+      <url>http://repo.opennms.org/maven2</url>
+    </pluginRepository>
+    <pluginRepository>
+      <snapshots>
+        <enabled>true</enabled>
+        <updatePolicy>${updatePolicy}</updatePolicy>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <id>opennms-snapshots</id>
+      <name>OpenNMS Repository</name>
+      <url>http://repo.opennms.org/snapshots</url>
+    </pluginRepository>
+    <pluginRepository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <id>codehaus</id>
+      <name>Maven/Codehaus Repository</name>
+      <url>http://repository.codehaus.org</url>
+    </pluginRepository>
+    <pluginRepository>
+      <snapshots>
+        <enabled>true</enabled>
+        <updatePolicy>${updatePolicy}</updatePolicy>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <id>codehaus-snapshots</id>
+      <name>Maven/Codehaus Snapshot Repository</name>
+      <url>http://snapshots.repository.codehaus.org</url>
+    </pluginRepository>
+  </pluginRepositories>
+  <distributionManagement>
+    <site>
+      <id>opennms-site</id>
+      <name>OpenNMS Build Website</name>
+      <url>scpexe://repo.opennms.org/var/www/sites/opennms.org/site/repo/sites/opennms/${project.version}/</url>
+    </site>
+    <repository>
+      <id>opennms-repo</id>
+      <name>OpenNMS Maven Repository</name>
+      <url>scpexe://repo.opennms.org/var/www/sites/opennms.org/site/repo/maven2</url>
+    </repository>
+    <snapshotRepository>
+      <id>opennms-snapshots</id>
+      <name>OpenNMS Snapshot Maven Repository</name>
+      <url>scpexe://repo.opennms.org/var/www/sites/opennms.org/site/repo/snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>
+</project>
