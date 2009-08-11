@@ -2,21 +2,21 @@
   <parent>
     <groupId>org.opennms</groupId>
     <artifactId>org.opennms.lib</artifactId>
-    <version>1.7.5-SMS-SNAPSHOT</version>
+    <version>3</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.opennms.lib</groupId>
-  <artifactId>org.opennms.lib.rt</artifactId>
+  <artifactId>org.opennms.lib.tracker</artifactId>
   <version>0.1-SNAPSHOT</version>
   <name>OpenNMS Utils for Message Tracking</name>
   <packaging>bundle</packaging>
   <build>
     <plugins>
       <plugin>
-	<groupId>org.apache.felix</groupId>
-	<artifactId>maven-bundle-plugin</artifactId>
-	<version>1.4.3</version>
-	<extensions>true</extensions>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>1.4.3</version>
+        <extensions>true</extensions>
         <configuration>
           <instructions>
             <Bundle-SymbolicName>${artifactId}</Bundle-SymbolicName>
