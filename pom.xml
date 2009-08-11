@@ -10,7 +10,7 @@
   <artifactId>org.opennms.root</artifactId>
   <version>1-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>OpenNMS Root</name>
+  <name>OpenNMS.org Root</name>
 
   <scm>
     <connection>scm:svn:https://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/trunk</connection>
