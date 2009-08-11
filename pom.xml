@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.opennms</groupId>
   <artifactId>master</artifactId>
-  <version>3</version>
+  <version>4-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>OpenNMS Master POM</name>
   <description>
@@ -89,9 +89,9 @@
   </mailingLists>
 
   <scm>
-    <connection>scm:svn:http://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/tags/master-3</connection>
-    <developerConnection>scm:svn:https://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/tags/master-3</developerConnection>
-    <url>http://opennms.svn.sourceforge.net/viewvc/opennms/org.opennms/tags/master-3</url>
+    <connection>scm:svn:http://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/trunk/master</connection>
+    <developerConnection>scm:svn:https://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/trunk/master</developerConnection>
+    <url>http://opennms.svn.sourceforge.net/viewvc/opennms/org.opennms/trunk/master</url>
   </scm>
 
   <build>
