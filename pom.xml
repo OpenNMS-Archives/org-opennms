@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.opennms</groupId>
     <artifactId>master</artifactId>
-    <version>2</version>
+    <version>3</version>
     <relativePath>../master</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -42,9 +42,11 @@
     </plugins>
   </build>
   <modules>
+<!-- don't include them here, include them in the top-level
     <module>joesnmp</module>
     <module>service-registration</module>
     <module>snmp</module>
+-->
   </modules>
   <reporting>
     <plugins>
