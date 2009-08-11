@@ -7,14 +7,14 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>org.opennms.lib</artifactId>
-  <version>3</version>
+  <version>4-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>OpenNMS Libraries</name>
 
   <scm>
-    <connection>scm:svn:http://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/tags/org.opennms.lib-3</connection>
-    <developerConnection>scm:svn:https://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/tags/org.opennms.lib-3</developerConnection>
-    <url>http://opennms.svn.sourceforge.net/viewvc/opennms/org.opennms/tags/org.opennms.lib-3</url>
+    <connection>scm:svn:http://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/trunk/org.opennms.lib</connection>
+    <developerConnection>scm:svn:https://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/trunk/org.opennms.lib</developerConnection>
+    <url>http://opennms.svn.sourceforge.net/viewvc/opennms/org.opennms/trunk/org.opennms.lib</url>
   </scm>
 
   <build>
