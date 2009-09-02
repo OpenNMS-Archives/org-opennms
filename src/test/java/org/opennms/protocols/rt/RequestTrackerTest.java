@@ -57,7 +57,7 @@ public class RequestTrackerTest {
     
     public static long TIMEOUT = 100;
     
-    private static class TestReply implements Reply<Integer> {
+    private static class TestReply implements ResponseWithId<Integer> {
         
         private TestRequest m_request;
         
@@ -116,8 +116,9 @@ public class RequestTrackerTest {
             if (m_cb != null) m_cb.processError(this, t);
         }
 
-        public void processResponse(TestReply reply) {
+        public boolean processResponse(TestReply reply) {
             if (m_cb != null) m_cb.processResponse(this, reply);
+            return true;
         }
 
         public TestRequest processTimeout() {
@@ -310,7 +311,7 @@ public class RequestTrackerTest {
     public void testRequestTrackerReply() throws Exception {
         
         
-        RequestTracker<Integer, TestRequest, TestReply> rt = new RequestTracker<Integer, TestRequest, TestReply>("Immediate", new ImmediateTestMessenger());
+        RequestTracker<TestRequest, TestReply> rt = new RequestTracker<TestRequest, TestReply>("Immediate", new ImmediateTestMessenger(), new IDBasedRequestLocator<Integer, TestRequest, TestReply>());
 
         rt.start();
         
@@ -347,7 +348,7 @@ public class RequestTrackerTest {
     @Test
     public void testTimeoutNoRetries() throws Exception {
         
-        RequestTracker<Integer, TestRequest, TestReply> rt = new RequestTracker<Integer, TestRequest, TestReply>("NeverReply", new NeverReplyTestMessenger());
+        RequestTracker<TestRequest, TestReply> rt = new RequestTracker<TestRequest, TestReply>("NeverReply", new NeverReplyTestMessenger(), new IDBasedRequestLocator<Integer, TestRequest, TestReply>());
 
         rt.start();
         
@@ -373,7 +374,7 @@ public class RequestTrackerTest {
     @Test
     public void testTimeoutOneRetry() throws Exception {
         
-        RequestTracker<Integer, TestRequest, TestReply> rt = new RequestTracker<Integer, TestRequest, TestReply>("NeverReply", new NeverReplyTestMessenger());
+        RequestTracker<TestRequest, TestReply> rt = new RequestTracker<TestRequest, TestReply>("NeverReply", new NeverReplyTestMessenger(), new IDBasedRequestLocator<Integer, TestRequest, TestReply>());
 
         rt.start();
         
@@ -411,7 +412,7 @@ public class RequestTrackerTest {
         final long REPLY_DELAY = TIMEOUT + 20;
         
         DelayedTestMessenger messenger = new DelayedTestMessenger(REPLY_DELAY);
-        RequestTracker<Integer, TestRequest, TestReply> rt = new RequestTracker<Integer, TestRequest, TestReply>("Delayed", messenger);
+        RequestTracker<TestRequest, TestReply> rt = new RequestTracker<TestRequest, TestReply>("Delayed", messenger, new IDBasedRequestLocator<Integer, TestRequest, TestReply>());
 
         rt.start();
         

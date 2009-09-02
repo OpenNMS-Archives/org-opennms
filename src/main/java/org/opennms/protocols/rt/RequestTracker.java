@@ -36,9 +36,6 @@
 package org.opennms.protocols.rt;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -118,12 +115,12 @@ import org.apache.log4j.Logger;
  * 
  * @author <a href="mailto:brozow@opennms.org">Mathew Brozowski</a>
  */
-public class RequestTracker<ReqIdT, ReqT extends Request<ReqIdT, ReqT, ReplyT>, ReplyT extends Reply<ReqIdT>> {
+public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extends Response> {
     
     private static final Logger s_log = Logger.getLogger(RequestTracker.class);
     
+    private RequestLocator<ReqT, ReplyT> m_requestLocator;
     private Messenger<ReqT, ReplyT> m_messenger;
-    private Map<ReqIdT, ReqT> m_pendingRequests;
     private BlockingQueue<ReplyT> m_pendingReplyQueue;
     private DelayQueue<ReqT> m_timeoutQueue;
     
@@ -142,9 +139,9 @@ public class RequestTracker<ReqIdT, ReqT extends Request<ReqIdT, ReqT, ReplyT>, 
      * indicated messenger. The name is using to name the threads created by
      * the tracker.
      */
-    public RequestTracker(String name, Messenger<ReqT, ReplyT> messenger) throws IOException {
+    public RequestTracker(String name, Messenger<ReqT, ReplyT> messenger, RequestLocator<ReqT, ReplyT> requestLocator) throws IOException {
         
-	    m_pendingRequests = Collections.synchronizedMap(new HashMap<ReqIdT, ReqT>());
+        m_requestLocator = requestLocator;
 	    m_pendingReplyQueue = new LinkedBlockingQueue<ReplyT>();
 	    m_timeoutQueue = new DelayQueue<ReqT>();
 	    
@@ -202,49 +199,48 @@ public class RequestTracker<ReqIdT, ReqT extends Request<ReqIdT, ReqT, ReplyT>, 
      */
     public void sendRequest(ReqT request) throws Exception {
         assertStarted();
-        synchronized(m_pendingRequests) {
-            ReqT oldRequest = m_pendingRequests.get(request.getId());
-            if (oldRequest != null) {
-            	request.processError(new IllegalStateException("Duplicate request; keeping old request: "+oldRequest+"; removing new request: "+request));
-            	return;
-            }
-            m_pendingRequests.put(request.getId(), request);
-            m_messenger.sendRequest(request);
-        }
+        if (!m_requestLocator.trackRequest(request)) return;
+        m_messenger.sendRequest(request);
         debugf("Scheding timeout for request to %s in %d ms", request, request.getDelay(TimeUnit.MILLISECONDS));
         m_timeoutQueue.offer(request);
     }
 
-	private void processReplies() throws InterruptedException {
+    private void processReplies() throws InterruptedException {
 	    while (true) {
 	        ReplyT reply = m_pendingReplyQueue.take();
             debugf("Found a reply to process: %s", reply);
-	        ReqIdT id = reply.getRequestId();
-	        debugf("Looking for request with Id: %s in map %s", id, m_pendingRequests);
-	        ReqT request = m_pendingRequests.remove(id);
-	        if (request != null) {
-	            processReply(reply, request);
+            
+            ReqT request = m_requestLocator.locateMatchingRequest(reply);
+
+            if (request != null) {
+	            if (processReply(reply, request)) {
+	                m_requestLocator.requestComplete(request);
+	            }
 	        } else {
 	            debugf("No request found for reply %s", reply);
 	        }
 	    }
     }
 
-    private void processReply(ReplyT reply, ReqT request) {
+    private boolean processReply(ReplyT reply, ReqT request) {
         try {
             debugf("Processing reply %s for request %s", reply, request);
-            request.processResponse(reply);
+            return request.processResponse(reply);
         } catch (Throwable t) {
             errorf(t, "Unexpected error processingResponse to request: %s, reply is %s", request, reply);
+            // we should throw away the request if this happens
+            return true;
         }
     }
 
 	private void processTimeouts() throws InterruptedException {  
 	    while (true) {
+	        
 	        ReqT timedOutRequest = m_timeoutQueue.take();
             debugf("Found a possibly timedout request: %s", timedOutRequest);
-	        ReqT pendingRequest = m_pendingRequests.remove(timedOutRequest.getId());
-            if (pendingRequest == timedOutRequest) {
+	        ReqT pendingRequest = m_requestLocator.requestTimedOut(timedOutRequest);
+
+	        if (pendingRequest == timedOutRequest) {
 	            // then this request is still pending so we must time it out
 	            ReqT retry = processTimeout(timedOutRequest);
 	            if (retry != null) {
