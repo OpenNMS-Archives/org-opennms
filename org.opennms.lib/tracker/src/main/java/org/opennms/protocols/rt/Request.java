@@ -42,13 +42,13 @@ import java.util.concurrent.TimeUnit;
  * 
  * @author brozow
  */
-public interface Request<ReqIdT, ReqT extends Request<ReqIdT, ReqT, ReplyT>, ReplyT> extends Delayed {
+public interface Request<RequestIdT, RequestT extends Request<RequestIdT, RequestT, ResponseT>, ResponseT> extends Delayed {
     
     /**
      * Returns the id of this request. This is is matched against the id of a
      * reply in order to associate replies with requests.
      */
-    ReqIdT getId();
+    RequestIdT getId();
     
     /**
      * Indicates how many units of time are remaining until this request times
@@ -63,7 +63,7 @@ public interface Request<ReqIdT, ReqT extends Request<ReqIdT, ReqT, ReplyT>, Rep
      * Tell the request about a reply that come in with matched ids. Further
      * processing is left to the request.
      */
-    void processResponse(ReplyT reply);
+    boolean processResponse(ResponseT reply);
 
     /**
      * Notify this request that no reply has come in before its timeout has
@@ -71,7 +71,7 @@ public interface Request<ReqIdT, ReqT extends Request<ReqIdT, ReqT, ReplyT>, Rep
      * retry should be attempted then a new request should be returned that
      * can be retried, otherwise null should be returned.
      */
-    ReqT processTimeout();
+    RequestT processTimeout();
     
     /**
      * If an error or exception occurs during processing of this request then

@@ -32,17 +32,16 @@
 package org.opennms.protocols.rt;
 
 /**
- * A Reply represents a message that comes in from a Messenger service and is
- * intended to be a response to a previous request.
- * 
+ * ResponseWithId
+ *
  * @author brozow
  */
-public interface Reply<ReqIdT> {
-    
-    
+public interface ResponseWithId<ReqIdT> extends Response {
+
     /**
      * The id of any request that this is intended to be a reply for.
      */
     ReqIdT getRequestId();
+
 
 }
