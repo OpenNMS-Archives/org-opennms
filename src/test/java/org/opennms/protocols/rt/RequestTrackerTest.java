@@ -332,9 +332,9 @@ public class RequestTrackerTest {
         assertNotNull(cb.response);
         assertNotNull(cb.responseTimestamp);
         
-        // expect the reply very quickly (no more than 10 millis)
+        // expect the reply very quickly (no more than 50 millis)
         long delay = cb.responseTimestamp - req.getSentTimestamp();
-        assertTrue( "Response came too late. Expected delay "+delay+" to be less than 10", delay < 10);
+        assertTrue( "Response came too late. Expected delay "+delay+" to be less than 50", delay < 50);
 
         
         // assert reply has the same requestId
