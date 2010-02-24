@@ -89,9 +89,9 @@
   </mailingLists>
 
   <scm>
-    <connection>scm:svn:http://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/trunk/master</connection>
-    <developerConnection>scm:svn:https://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/trunk/master</developerConnection>
-    <url>http://opennms.svn.sourceforge.net/viewvc/opennms/org.opennms/trunk/master</url>
+    <connection>scm:git:git://opennms.git.sourceforge.net/gitroot/opennms/org-opennms</connection>
+    <developerConnection>scm:svn:ssh://opennms.git.sourceforge.net/gitroot/opennms/org-opennms</developerConnection>
+    <url>http://opennms.git.sourceforge.net/git/gitweb-index.cgi</url>
   </scm>
 
   <build>
