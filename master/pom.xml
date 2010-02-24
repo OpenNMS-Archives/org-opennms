@@ -90,7 +90,7 @@
 
   <scm>
     <connection>scm:git:git://opennms.git.sourceforge.net/gitroot/opennms/org-opennms</connection>
-    <developerConnection>scm:svn:ssh://opennms.git.sourceforge.net/gitroot/opennms/org-opennms</developerConnection>
+    <developerConnection>scm:git:ssh://opennms.git.sourceforge.net/gitroot/opennms/org-opennms</developerConnection>
     <url>http://opennms.git.sourceforge.net/git/gitweb-index.cgi</url>
   </scm>
 
