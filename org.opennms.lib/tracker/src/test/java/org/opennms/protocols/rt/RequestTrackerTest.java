@@ -42,6 +42,7 @@ import java.util.Queue;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -79,6 +80,7 @@ public class RequestTrackerTest {
     
     private static class TestRequest implements Request<Integer, TestRequest, TestReply> {
         
+    	private final AtomicBoolean m_processed = new AtomicBoolean(false);
         private Integer m_id;
         private long m_timeout;
         private int m_retries;
@@ -113,15 +115,18 @@ public class RequestTrackerTest {
         }
 
         public void processError(Throwable t) {
+        	m_processed.set(true);
             if (m_cb != null) m_cb.processError(this, t);
         }
 
         public boolean processResponse(TestReply reply) {
+        	m_processed.set(true);
             if (m_cb != null) m_cb.processResponse(this, reply);
             return true;
         }
 
         public TestRequest processTimeout() {
+        	m_processed.set(true);
             if (m_retries > 0) {
                 return new TestRequest(m_id, m_timeout, m_retries-1, m_cb);
             } else {
@@ -129,6 +134,10 @@ public class RequestTrackerTest {
                 return null;
             }
                 
+        }
+        
+        public boolean isProcessed() {
+        	return m_processed.get();
         }
 
         public int compareTo(Delayed o) {
@@ -147,8 +156,6 @@ public class RequestTrackerTest {
         public TestRequest request;
 
         public Throwable error;
-        public Long errorTimestamp;
-
         
         public TestReply response;
         public long responseTimestamp;
@@ -161,7 +168,6 @@ public class RequestTrackerTest {
         public void processError(TestRequest request, Throwable t) {
             this.request = request;
             this.error = t;
-            this.errorTimestamp = System.currentTimeMillis();
             this.callbackCount.incrementAndGet();
         }
 
@@ -185,9 +191,9 @@ public class RequestTrackerTest {
     }
     
     private abstract static class TestMessenger implements Messenger<TestRequest, TestReply> {
-        AtomicReference<Queue<TestReply>> m_queue = new AtomicReference<Queue<TestReply>>();
-        AtomicInteger m_sendsRequested = new AtomicInteger();
-        AtomicInteger m_sendsPerformed = new AtomicInteger();
+        private AtomicReference<Queue<TestReply>> m_queue = new AtomicReference<Queue<TestReply>>();
+        private AtomicInteger m_sendsRequested = new AtomicInteger();
+        private AtomicInteger m_sendsPerformed = new AtomicInteger();
         
         public void start(Queue<TestReply> q) {
             if (!m_queue.compareAndSet(null, q)) {
@@ -195,14 +201,14 @@ public class RequestTrackerTest {
             }
         }
 
-        Queue<TestReply> getQueue() {
+        private Queue<TestReply> getQueue() {
             Queue<TestReply> q = m_queue.get();
             assertNotNull(getClass()+" is not yet started!!!", q);
             return q;
         }
         
         void doSend(TestRequest request) throws IOException {
-            Queue<TestReply> q = m_queue.get();
+            Queue<TestReply> q = getQueue();
             assertNotNull(getClass()+" is not yet started!!!", q);
             sendPerformed();
             q.offer(new TestReply(request));

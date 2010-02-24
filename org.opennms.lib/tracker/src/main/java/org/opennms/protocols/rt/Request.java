@@ -78,8 +78,14 @@ public interface Request<RequestIdT, RequestT extends Request<RequestIdT, Reques
      * processError is called with the error or exception object.
      */
     void processError(Throwable t);
-
-
+    
+	/**
+	 * Returns true if this request has already been processed.
+	 * 
+	 * This method should return true if and only if one of the process method
+	 * has been called.
+	 */
+	boolean isProcessed();
 
 
 }

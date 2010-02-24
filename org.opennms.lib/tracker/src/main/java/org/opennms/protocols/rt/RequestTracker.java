@@ -237,6 +237,13 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
 	    while (true) {
 	        
 	        ReqT timedOutRequest = m_timeoutQueue.take();
+	        
+	        // do nothing is the request has already been processed.
+	        if (timedOutRequest.isProcessed()) {
+	        	return;
+	        }
+	        
+	        
             debugf("Found a possibly timedout request: %s", timedOutRequest);
 	        ReqT pendingRequest = m_requestLocator.requestTimedOut(timedOutRequest);
 
@@ -251,7 +258,9 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
                     }
 	            }
 	        } else if (pendingRequest != null) {
-	            errorf("Uh oh! A pending request %s with the same id exists but is not the timout request %s from the queue!", pendingRequest, timedOutRequest);
+	        	String msg = String.format("A pending request %s with the same id exists but is not the timeout request %s from the queue!", pendingRequest, timedOutRequest);
+	        	errorf(msg);
+	            timedOutRequest.processError(new IllegalStateException(msg));
 	        }
 	        
 	    }
