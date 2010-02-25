@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.opennms</groupId>
     <artifactId>master</artifactId>
-    <version>4</version>
+    <version>5</version>
     <relativePath>master</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -13,9 +13,9 @@
   <name>OpenNMS.org Root</name>
 
   <scm>
-    <connection>scm:svn:https://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/trunk</connection>
-    <developerConnection>scm:svn:https://opennms.svn.sourceforge.net/svnroot/opennms/org.opennms/trunk</developerConnection>
-    <url>http://opennms.svn.sourceforge.net/viewvc/opennms/org.opennms/trunk</url>
+    <connection>scm:git:git://opennms.git.sourceforge.net/gitroot/opennms/org-opennms</connection>
+    <developerConnection>scm:git:ssh://opennms.git.sourceforge.net/gitroot/opennms/org-opennms</developerConnection>
+    <url>http://opennms.git.sourceforge.net/git/gitweb-index.cgi</url>
   </scm>
 
   <modules>
