@@ -50,8 +50,14 @@ public class IDBasedRequestLocator<ReqIdT, ReqT extends Request<ReqIdT, ReqT, Re
     private Map<ReqIdT, ReqT> m_pendingRequests = Collections.synchronizedMap(new HashMap<ReqIdT, ReqT>());
     
     public ReqT requestTimedOut(ReqT timedOutRequest) {
-        ReqT pendingRequest = m_pendingRequests.remove(timedOutRequest.getId());
-        return pendingRequest;
+        synchronized (m_pendingRequests) {
+            ReqT pendingRequest = m_pendingRequests.get(timedOutRequest.getId());
+            if (pendingRequest == timedOutRequest) {
+                m_pendingRequests.remove(timedOutRequest.getId());
+            }
+            // we return pendingRequest anyway to the tracker processes this as an error
+            return pendingRequest;
+        }
     }
     
     public void requestComplete(ReqT request) {
@@ -89,14 +95,6 @@ public class IDBasedRequestLocator<ReqIdT, ReqT extends Request<ReqIdT, ReqT, Re
         if (log().isDebugEnabled()) {
             log().debug(String.format(format, args));
         }
-    }
-
-    private void errorf(String format, Object... args) {
-        log().error(String.format(format, args));
-    }
-
-    private void errorf(Throwable t, String format, Object... args) {
-        log().error(String.format(format, args), t);
     }
 
 
