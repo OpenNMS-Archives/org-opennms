@@ -235,35 +235,42 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
 
 	private void processTimeouts() throws InterruptedException {  
 	    while (true) {
-	        
-	        ReqT timedOutRequest = m_timeoutQueue.take();
-	        
-	        // do nothing is the request has already been processed.
-	        if (timedOutRequest.isProcessed()) {
-	        	return;
+	        try {
+	            ReqT timedOutRequest = m_timeoutQueue.take();
+	            processNextTimeout(timedOutRequest);
+	        } catch (Throwable t) {
+	            errorf(t, "Unexpected error processingTimeout!");
 	        }
-	        
-	        
-            debugf("Found a possibly timedout request: %s", timedOutRequest);
-	        ReqT pendingRequest = m_requestLocator.requestTimedOut(timedOutRequest);
-
-	        if (pendingRequest == timedOutRequest) {
-	            // then this request is still pending so we must time it out
-	            ReqT retry = processTimeout(timedOutRequest);
-	            if (retry != null) {
-	                try {
-                        sendRequest(retry);
-                    } catch (Exception e) {
-                        retry.processError(e);
-                    }
-	            }
-	        } else if (pendingRequest != null) {
-	        	String msg = String.format("A pending request %s with the same id exists but is not the timeout request %s from the queue!", pendingRequest, timedOutRequest);
-	        	errorf(msg);
-	            timedOutRequest.processError(new IllegalStateException(msg));
-	        }
-	        
 	    }
+	}
+	
+	private void processNextTimeout(ReqT timedOutRequest) {
+	    
+        
+        // do nothing is the request has already been processed.
+        if (timedOutRequest.isProcessed()) {
+            return;
+        }
+        
+        
+        debugf("Found a possibly timedout request: %s", timedOutRequest);
+        ReqT pendingRequest = m_requestLocator.requestTimedOut(timedOutRequest);
+
+        if (pendingRequest == timedOutRequest) {
+            // then this request is still pending so we must time it out
+            ReqT retry = processTimeout(timedOutRequest);
+            if (retry != null) {
+                try {
+                    sendRequest(retry);
+                } catch (Exception e) {
+                    retry.processError(e);
+                }
+            }
+        } else if (pendingRequest != null) {
+            String msg = String.format("A pending request %s with the same id exists but is not the timeout request %s from the queue!", pendingRequest, timedOutRequest);
+            errorf(msg);
+            timedOutRequest.processError(new IllegalStateException(msg));
+        }
 	}
 
     private ReqT processTimeout(ReqT request) {
