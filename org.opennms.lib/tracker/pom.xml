@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.opennms.lib</groupId>
   <artifactId>org.opennms.lib.tracker</artifactId>
-  <version>0.5</version>
+  <version>0.6-SNAPSHOT</version>
   <name>OpenNMS Utils for Message Tracking</name>
   <packaging>bundle</packaging>
 
