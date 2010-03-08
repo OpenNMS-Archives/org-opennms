@@ -210,7 +210,7 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
 	        ReplyT reply = m_pendingReplyQueue.take();
             debugf("Found a reply to process: %s", reply);
             
-            ReqT request = m_requestLocator.locateMatchingRequest(reply);
+            ReqT request = locateMatchingRequest(reply);
 
             if (request != null) {
 	            if (processReply(reply, request)) {
@@ -220,6 +220,15 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
 	            debugf("No request found for reply %s", reply);
 	        }
 	    }
+    }
+
+    private ReqT locateMatchingRequest(ReplyT reply) {
+        try {
+            return m_requestLocator.locateMatchingRequest(reply);
+        } catch (Throwable t) {
+            errorf(t, "Unexpected error locating response to request %s. Discarding response!", reply);
+            return null;
+        }
     }
 
     private boolean processReply(ReplyT reply, ReqT request) {
