@@ -19,7 +19,7 @@
     <dependency>
       <groupId>org.opennms</groupId>
       <artifactId>opennms-util</artifactId>
-      <version>1.7.6</version>
+      <version>[1.7.0,3.0.0)</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
