@@ -224,9 +224,4 @@ public class Snmp4JWalker extends SnmpWalker {
             m_session = null;
         }
     }
-
-    private final Category log() {
-        return ThreadCategory.getInstance(getClass());
-    }
-
 }

@@ -104,7 +104,7 @@ public class IpAddressNetSnmp64bitBugAware extends IpAddress {
 		this.setInetAddress(InetAddress.getByAddress(value));
 	}
 	
-    private Category log() {
+    private ThreadCategory log() {
         return ThreadCategory.getInstance(getClass());
     }
 }

@@ -61,6 +61,7 @@ public abstract class SnmpWalker {
     private boolean m_error = false;
     private String m_errorMessage;
     private Throwable m_errorThrowable;
+    private final ThreadCategory m_log;
     
     protected SnmpWalker(InetAddress address, String name, int maxVarsPerPdu, int maxRepititions, CollectionTracker tracker) {
         m_address = address;
@@ -73,6 +74,7 @@ public abstract class SnmpWalker {
         
         m_maxVarsPerPdu = maxVarsPerPdu;
 
+        m_log = ThreadCategory.getInstance(SnmpWalker.class);
     }
 
     protected abstract WalkerPduBuilder createPduBuilder(int maxVarsPerPdu);
@@ -174,8 +176,8 @@ public abstract class SnmpWalker {
         }
     }
 
-    private final Category log() {
-        return ThreadCategory.getInstance(SnmpWalker.class);
+    protected final ThreadCategory log() {
+        return m_log;
     }
 
     public void waitFor() throws InterruptedException {

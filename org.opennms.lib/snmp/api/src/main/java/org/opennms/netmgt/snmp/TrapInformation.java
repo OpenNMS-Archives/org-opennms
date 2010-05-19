@@ -75,7 +75,7 @@ public abstract class TrapInformation implements TrapNotification {
         // by default we do nothing;
     }
     
-    protected Category log() {
+    protected ThreadCategory log() {
         return ThreadCategory.getInstance(getClass());
     }
 

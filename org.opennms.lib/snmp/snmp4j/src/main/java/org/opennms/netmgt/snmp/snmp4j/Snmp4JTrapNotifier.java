@@ -305,7 +305,7 @@ public class Snmp4JTrapNotifier implements CommandResponder {
         }
     }
     
-    private Category log() {
+    private ThreadCategory log() {
     	return ThreadCategory.getInstance(getClass());
     }
 }

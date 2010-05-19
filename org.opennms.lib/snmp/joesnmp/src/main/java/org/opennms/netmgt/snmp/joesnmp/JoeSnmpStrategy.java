@@ -239,8 +239,8 @@ public class JoeSnmpStrategy implements SnmpStrategy {
         params.setWriteCommunity(agentConfig.getWriteCommunity());
     }
 
-    private Category log() {
-        return ThreadCategory.getInstance();
+    private ThreadCategory log() {
+        return ThreadCategory.getInstance(this.getClass());
     }
 
     public SnmpValue[] getBulk(SnmpAgentConfig agentConfig, SnmpObjId[] oids) {

@@ -361,7 +361,7 @@ public class Snmp4JStrategy implements SnmpStrategy {
         return retvalues;
     }
 
-    private Category log() {
+    private ThreadCategory log() {
         return ThreadCategory.getInstance(getClass());
     }
     

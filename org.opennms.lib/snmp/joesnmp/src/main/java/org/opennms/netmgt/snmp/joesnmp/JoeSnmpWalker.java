@@ -38,7 +38,6 @@ package org.opennms.netmgt.snmp.joesnmp;
 import java.net.SocketException;
 
 import org.apache.log4j.Category;
-import org.opennms.core.utils.ThreadCategory;
 import org.opennms.netmgt.snmp.CollectionTracker;
 import org.opennms.netmgt.snmp.SnmpObjId;
 import org.opennms.netmgt.snmp.SnmpValue;
@@ -53,6 +52,8 @@ import org.opennms.protocols.snmp.SnmpSMI;
 import org.opennms.protocols.snmp.SnmpSession;
 import org.opennms.protocols.snmp.SnmpSyntax;
 import org.opennms.protocols.snmp.SnmpVarBind;
+
+import org.opennms.core.utils.ThreadCategory;
 
 public class JoeSnmpWalker extends SnmpWalker {
     
@@ -212,10 +213,4 @@ public class JoeSnmpWalker extends SnmpWalker {
             m_session = null;
         }
     }
-    
-    private final Category log() {
-        return ThreadCategory.getInstance(getClass());
-    }
-
-
 }

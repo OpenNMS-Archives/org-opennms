@@ -110,7 +110,7 @@ public class SingleInstanceTracker extends CollectionTracker {
 
     }
 
-    protected Category log() {
+    protected ThreadCategory log() {
         return ThreadCategory.getInstance(getClass());
     }
 

@@ -150,7 +150,7 @@ public class TrapIdentity {
         m_specific = specific;
     }
 
-    private Category log() {
+    private ThreadCategory log() {
         return ThreadCategory.getInstance(getClass());
     }
     
