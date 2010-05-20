@@ -17,16 +17,25 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.opennms.core</groupId>
+      <artifactId>org.opennms.core.lib</artifactId>
+      <version>[1.7.0,2.0.0)</version>
+    </dependency>
+    <dependency>
       <groupId>org.opennms</groupId>
       <artifactId>opennms-util</artifactId>
-      <version>[1.7.0,3.0.0)</version>
-      <scope>compile</scope>
+      <version>[1.7.0,2.0.0)</version>
     </dependency>
     <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
       <version>2.4</version>
-      <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>org.opennms.dependencies</groupId>
+      <artifactId>spring-dependencies</artifactId>
+      <version>[1.7.0,2.0.0)</version>
+    </dependency>
+
   </dependencies>
 </project>
