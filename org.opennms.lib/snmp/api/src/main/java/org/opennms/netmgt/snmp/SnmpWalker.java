@@ -49,18 +49,18 @@ public abstract class SnmpWalker {
         abstract public void reset();
     }
     
-    private String m_name;
-    private CollectionTracker m_tracker;
+    private final String m_name;
+    private final CollectionTracker m_tracker;
 
-    private BarrierSignaler m_signal;
+    private final BarrierSignaler m_signal;
 
     private InetAddress m_address;
     private WalkerPduBuilder m_pduBuilder;
     private ResponseProcessor m_responseProcessor;
-    private int m_maxVarsPerPdu;
+    private final int m_maxVarsPerPdu;
     private boolean m_error = false;
-    private String m_errorMessage;
-    private Throwable m_errorThrowable;
+    private String m_errorMessage = "";
+    private Throwable m_errorThrowable = null;
     private final ThreadCategory m_log;
     
     protected SnmpWalker(InetAddress address, String name, int maxVarsPerPdu, int maxRepititions, CollectionTracker tracker) {
