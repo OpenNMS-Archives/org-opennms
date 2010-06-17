@@ -41,6 +41,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import org.opennms.netmgt.snmp.SnmpObjId;
+import org.opennms.netmgt.snmp.SnmpUtils;
 import org.opennms.netmgt.snmp.SnmpValue;
 import org.snmp4j.smi.Counter32;
 import org.snmp4j.smi.Counter64;
@@ -288,20 +289,41 @@ class Snmp4JValue implements SnmpValue {
         }
         
         if (getType() == SnmpValue.SNMP_OCTET_STRING) {
-            return allBytesDisplayable(getBytes());
+            return SnmpUtils.allBytesDisplayable(getBytes());
         }
         
         return false;
     }
 
-	private boolean allBytesDisplayable(byte[] bytes) {
-		for (byte b : bytes) {
-		    if ((b < 32 && b != 9 && b != 10 && b != 13 && b != 0) || b == 127) {
+    /**
+     * <p>If the value is in the unprintable ASCII range (< 32) and is not a:</p>
+     * <ul>
+     *   <li>Tab (9)</li>
+     *   <li>Linefeed (10)</li>
+     *   <li>Carriage return (13)</li>
+     * <ul>
+     * <p>or the byte is Delete (127) then this method will return false. Also, if the byte 
+     * array has a NULL byte (0) that occurs anywhere besides the last character, return false. 
+     * We will allow the NULL byte as a special case at the end of the string.</p>
+     */
+    private static boolean allBytesDisplayable(byte[] bytes) {
+        for (int i = 0; i < bytes.length; i++) {
+            byte b = bytes[i];
+            // Low or high ASCII (excluding Tab, Carriage Return, and Linefeed)
+            if (b < 32 && b != 9 && b != 10 && b != 13) {
                 return false;
             }
-		}
-		return true;
-	}
+            // Delete (127)
+            else if (b == 127) {
+                return false;
+            }
+            // Null (0)
+            else if (b == 0 && i != (bytes.length - 1)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     public boolean isNull() {
         return getType() == SnmpValue.SNMP_NULL;

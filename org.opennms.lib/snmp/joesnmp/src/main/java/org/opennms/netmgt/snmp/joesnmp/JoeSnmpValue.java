@@ -33,6 +33,7 @@ import java.math.BigInteger;
 import java.net.InetAddress;
 
 import org.opennms.netmgt.snmp.SnmpObjId;
+import org.opennms.netmgt.snmp.SnmpUtils;
 import org.opennms.netmgt.snmp.SnmpValue;
 import org.opennms.protocols.snmp.SnmpCounter32;
 import org.opennms.protocols.snmp.SnmpCounter64;
@@ -266,13 +267,13 @@ class JoeSnmpValue implements SnmpValue {
             return true;
         
         if (getType() == SnmpValue.SNMP_OCTET_STRING) {
-            return allBytesDisplayable(getBytes());
+            return SnmpUtils.allBytesDisplayable(getBytes());
         }
         
         return false;
     }
 
-	private boolean allBytesDisplayable(byte[] bytes) {
+	private static boolean allBytesDisplayable(byte[] bytes) {
 		for(int i = 0; i < bytes.length; i++) {
 		    byte b = bytes[i];
 		    if ((b < 32 && b != 9 && b != 10 && b != 13 && b != 0) || b == 127)
