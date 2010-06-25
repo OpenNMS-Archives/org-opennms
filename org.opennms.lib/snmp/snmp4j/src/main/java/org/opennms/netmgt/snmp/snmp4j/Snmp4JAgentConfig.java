@@ -340,6 +340,7 @@ public class Snmp4JAgentConfig {
                             getAuthPassPhrase(),
                             getPrivProtocol(),
                             getPrivPassPhrase()));
+            session.setReportHandler(new Snmp4JWalker.RemoveEngineTimeReportHandler(session));
         }
         
         return session;

@@ -46,17 +46,22 @@ import org.opennms.netmgt.snmp.CollectionTracker;
 import org.opennms.netmgt.snmp.SnmpObjId;
 import org.opennms.netmgt.snmp.SnmpValue;
 import org.opennms.netmgt.snmp.SnmpWalker;
+import org.snmp4j.CommandResponderEvent;
 import org.snmp4j.PDU;
+import org.snmp4j.ScopedPDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.Target;
 import org.snmp4j.event.ResponseEvent;
 import org.snmp4j.event.ResponseListener;
+import org.snmp4j.mp.PduHandle;
 import org.snmp4j.mp.SnmpConstants;
+import org.snmp4j.security.USM;
+import org.snmp4j.smi.OctetString;
 import org.snmp4j.smi.OID;
 import org.snmp4j.smi.VariableBinding;
 
 public class Snmp4JWalker extends SnmpWalker {
-    
+
     public static abstract class Snmp4JPduBuilder extends WalkerPduBuilder {
         public Snmp4JPduBuilder(int maxVarsPerPdu) {
             super(maxVarsPerPdu);
@@ -126,15 +131,20 @@ public class Snmp4JWalker extends SnmpWalker {
         }
         
     }
-    
+
+    /**
+     * TODO: Merge this logic with {@link Snmp4JStrategy#processResponse()}
+     */
     public class Snmp4JResponseListener implements ResponseListener {
 
-        public void processResponse(PDU response) {
+        private void processResponse(PDU response) {
             try {
                 if (log().isDebugEnabled()) {
-                    log().debug("Received a tracker pdu of type "+PDU.getTypeString(response.getType())+" from "+getAddress()+" of size "+response.size()+" errorStatus = "+response.getErrorStatusText()+" errorIndex = "+response.getErrorIndex());
+                    log().debug("Received a tracker PDU of type "+PDU.getTypeString(response.getType())+" from "+getAddress()+" of size "+response.size()+", errorStatus = "+response.getErrorStatus()+", errorStatusText = "+response.getErrorStatusText()+", errorIndex = "+response.getErrorIndex());
                 }
-                if (response.getType() != PDU.REPORT) {
+                if (response.getType() == PDU.REPORT) {
+                    handleAuthError("A REPORT PDU was returned from the agent.  This is most likely an authentication problem.  Please check the config");
+                } else {
                     if (!processErrors(response.getErrorStatus(), response.getErrorIndex())) {
                         for (int i = 0; i < response.size(); i++) {
                             VariableBinding vb = response.get(i);
@@ -144,8 +154,6 @@ public class Snmp4JWalker extends SnmpWalker {
                         }
                     }
                     buildAndSendNextPdu();
-                } else {
-                    handleAuthError("A REPORT Pdu was returned from the agent.  This is most likely an authentication problem.  Please check the config");
                 }
             } catch (Throwable e) {
                 handleFatalError(e);
@@ -153,16 +161,21 @@ public class Snmp4JWalker extends SnmpWalker {
         }
 
         public void onResponse(ResponseEvent responseEvent) {
-            // need to cancel this here otherwise SNMP4J Keeps it around forever... go figure
+            // need to cancel the request here otherwise SNMP4J Keeps it around forever... go figure
             m_session.cancel(responseEvent.getRequest(), this);
+
+            // Check to see if we got an interrupted exception
             if (responseEvent.getError() instanceof InterruptedException) {
                 if (log().isDebugEnabled()) {
                     log().debug("Interruption event.  We have probably tried to close the session due to an error: " + responseEvent.getError(), responseEvent.getError());
                 }
+            // Check to see if we got any kind of error
+            } else if (responseEvent.getError() != null){
+                handleError(getName()+": snmpInternalError: " + responseEvent.getError() + " for: " + getAddress(), responseEvent.getError());
+            // Check to see if the response is null, indicating a timeout
             } else if (responseEvent.getResponse() == null) {
                 handleTimeout(getName()+": snmpTimeoutError for: " + getAddress());
-            } else if (responseEvent.getError() != null){
-                handleError(getName()+": snmpInternalError: " + responseEvent.getError() + " for: " + getAddress());
+            // If we have a PDU in the response, process it
             } else {
                 processResponse(responseEvent.getResponse());
             }
@@ -173,9 +186,9 @@ public class Snmp4JWalker extends SnmpWalker {
     }
     
     private Snmp m_session;
-    private Target m_tgt;
-    private ResponseListener m_listener;
-    private Snmp4JAgentConfig m_agentConfig;
+    private final Target m_tgt;
+    private final ResponseListener m_listener;
+    private final Snmp4JAgentConfig m_agentConfig;
 
     public Snmp4JWalker(Snmp4JAgentConfig agentConfig, String name, CollectionTracker tracker) {
         super(agentConfig.getInetAddress(), name, agentConfig.getMaxVarsPerPdu(), agentConfig.getMaxRepetitions(), tracker);
@@ -201,10 +214,49 @@ public class Snmp4JWalker extends SnmpWalker {
                 : (WalkerPduBuilder)new GetBulkBuilder(maxVarsPerPdu));
     }
 
+    public static class RemoveEngineTimeReportHandler implements Snmp.ReportHandler {
+        private final Snmp.ReportHandler m_delegate;
+        private final USM m_usm;
+        private int m_usmStatsNotInTimeWindowsCounter;
+
+        public RemoveEngineTimeReportHandler(Snmp session) {
+            m_delegate = session.getReportHandler();
+            m_usm = session.getUSM();
+            m_usmStatsNotInTimeWindowsCounter = 0;
+        }
+
+        public void processReport(PduHandle handle, CommandResponderEvent event) {
+            PDU pdu = event.getPDU();
+            if (pdu.size() == 1) {
+                VariableBinding varbind = pdu.get(0);
+                if (varbind == null) {
+                    log().warn("Null varbind in REPORT PDU");
+                } else {
+                    // 
+                    if (SnmpConstants.usmStatsNotInTimeWindows.equals(varbind.getOid())) {
+                        log().fatal(getClass().getSimpleName() + ": NOT IN TIME WINDOW: " + event.toString());
+                        m_usmStatsNotInTimeWindowsCounter++;
+                        // If we have received more than one usmStatsNotInTimeWindows REPORT, then reset the
+                        // stored engine time values for this engine ID
+                        if (m_usmStatsNotInTimeWindowsCounter > 2) {
+                            OctetString engineId = ((ScopedPDU)pdu).getContextEngineID();
+                            log().warn("Multiple usmStatsNotInTimeWindowsCounter REPORT PDUs received, resetting engine time for engine ID \"" + engineId + "\" to force renegotiation");
+                            m_usm.removeEngineTime(engineId);
+                            m_usmStatsNotInTimeWindowsCounter = 0;
+                        }
+                    } else if (SnmpConstants.usmStatsUnknownEngineIDs.equals(varbind.getOid())) {
+                        log().fatal(getClass().getSimpleName() + ": UNKNOWN ENGINE ID: " + event.toString());
+                    }
+                }
+            }
+        }
+    }
+
     protected void sendNextPdu(WalkerPduBuilder pduBuilder) throws IOException {
         Snmp4JPduBuilder snmp4JPduBuilder = (Snmp4JPduBuilder)pduBuilder;
         if (m_session == null) {
             m_session = m_agentConfig.createSnmpSession();
+            m_session.setReportHandler(new RemoveEngineTimeReportHandler(m_session));
             m_session.listen();
         }
         

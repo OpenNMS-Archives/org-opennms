@@ -290,6 +290,9 @@ public class Snmp4JStrategy implements SnmpStrategy {
             } catch (IOException e) {
                 log().error("send: error during SNMP operation: " + e, e);
                 return new SnmpValue[] { null };
+            } catch (Throwable e) {
+                log().error("send: unexpected error during SNMP operation: " + e, e);
+                return new SnmpValue[] { null };
             }
         } finally {
             closeQuietly(session);
@@ -325,7 +328,10 @@ public class Snmp4JStrategy implements SnmpStrategy {
         
         return pdu;
     }
-    
+
+    /**
+     * TODO: Merge this logic with {@link Snmp4JWalker.Snmp4JResponseListener#processResponse(PDU response)}
+     */
     private SnmpValue[] processResponse(Snmp4JAgentConfig agentConfig, ResponseEvent responseEvent) throws IOException {
         SnmpValue[] retvalues = { null };
 
@@ -334,7 +340,7 @@ public class Snmp4JStrategy implements SnmpStrategy {
         } else if (responseEvent.getResponse().get(0).getSyntax() == SMIConstants.SYNTAX_NULL) {
             retvalues[0] = null;
         } else if (responseEvent.getError() != null) {
-            log().warn("send: Error during get operation.  Error: "+responseEvent.getError().getLocalizedMessage());
+            log().warn("send: Error during get operation.  Error: "+responseEvent.getError().getLocalizedMessage(), responseEvent.getError());
         } else if (responseEvent.getResponse().getType() == PDU.REPORT) {
             log().warn("send: Error during get operation.  Report returned with varbinds: "+responseEvent.getResponse().getVariableBindings());
         } else if (responseEvent.getResponse().getVariableBindings().size() < 1) {

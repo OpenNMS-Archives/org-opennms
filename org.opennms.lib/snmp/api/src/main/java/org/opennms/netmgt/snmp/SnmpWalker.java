@@ -61,7 +61,6 @@ public abstract class SnmpWalker {
     private boolean m_error = false;
     private String m_errorMessage = "";
     private Throwable m_errorThrowable = null;
-    private final ThreadCategory m_log;
     
     protected SnmpWalker(InetAddress address, String name, int maxVarsPerPdu, int maxRepititions, CollectionTracker tracker) {
         m_address = address;
@@ -73,8 +72,6 @@ public abstract class SnmpWalker {
         m_tracker.setMaxRepetitions(maxRepititions);
         
         m_maxVarsPerPdu = maxVarsPerPdu;
-
-        m_log = ThreadCategory.getInstance(SnmpWalker.class);
     }
 
     protected abstract WalkerPduBuilder createPduBuilder(int maxVarsPerPdu);
@@ -132,6 +129,12 @@ public abstract class SnmpWalker {
         processError("Error retrieving", msg, null);
     }
 
+    protected void handleError(String msg, Throwable t) {
+        // XXX why do we set timedOut to false here?  should we be doing this everywhere?
+        m_tracker.setTimedOut(false);
+        processError("Error retrieving", msg, t);
+    }
+
     protected void handleFatalError(Throwable e) {
         m_tracker.setFailed(true);
         processError("Unexpected error occurred processing", e.toString(), e);
@@ -176,8 +179,8 @@ public abstract class SnmpWalker {
         }
     }
 
-    protected final ThreadCategory log() {
-        return m_log;
+    protected static ThreadCategory log() {
+        return ThreadCategory.getInstance(SnmpWalker.class);
     }
 
     public void waitFor() throws InterruptedException {
