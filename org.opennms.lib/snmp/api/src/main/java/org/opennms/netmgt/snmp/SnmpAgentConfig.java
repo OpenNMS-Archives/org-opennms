@@ -73,7 +73,7 @@ public class SnmpAgentConfig extends SnmpConfiguration {
         buff.append(", Timeout: "+getTimeout());
         buff.append(", Retries: "+getRetries());
         buff.append(", MaxVarsPerPdu: "+getMaxVarsPerPdu());
-        buff.append(", MaxRepititions: "+getMaxRepetitions());
+        buff.append(", MaxRepetitions: "+getMaxRepetitions());
         buff.append(", Max request size: "+getMaxRequestSize());
         buff.append(", Version: "+versionToString(getVersion()));
         if (getVersion() == VERSION3) {

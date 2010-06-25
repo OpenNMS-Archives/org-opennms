@@ -234,21 +234,22 @@ public class Snmp4JWalker extends SnmpWalker {
                 } else {
                     // 
                     if (SnmpConstants.usmStatsNotInTimeWindows.equals(varbind.getOid())) {
-                        log().fatal(getClass().getSimpleName() + ": NOT IN TIME WINDOW: " + event.toString());
                         m_usmStatsNotInTimeWindowsCounter++;
                         // If we have received more than one usmStatsNotInTimeWindows REPORT, then reset the
                         // stored engine time values for this engine ID
-                        if (m_usmStatsNotInTimeWindowsCounter > 2) {
+                        if (m_usmStatsNotInTimeWindowsCounter > 1) {
                             OctetString engineId = ((ScopedPDU)pdu).getContextEngineID();
-                            log().warn("Multiple usmStatsNotInTimeWindowsCounter REPORT PDUs received, resetting engine time for engine ID \"" + engineId + "\" to force renegotiation");
+                            log().warn("Multiple usmStatsNotInTimeWindowsCounter REPORT PDUs received, resetting engine time for engine ID \"" + engineId + "\" to force renegotiation: " + event.toString());
                             m_usm.removeEngineTime(engineId);
                             m_usmStatsNotInTimeWindowsCounter = 0;
                         }
                     } else if (SnmpConstants.usmStatsUnknownEngineIDs.equals(varbind.getOid())) {
-                        log().fatal(getClass().getSimpleName() + ": UNKNOWN ENGINE ID: " + event.toString());
+                        // This PDU is thrown each time our SNMPv3 clients connect to an agent
+                        // using authPriv security as part of the security negotiation process.
                     }
                 }
             }
+            m_delegate.processReport(handle, event);
         }
     }
 

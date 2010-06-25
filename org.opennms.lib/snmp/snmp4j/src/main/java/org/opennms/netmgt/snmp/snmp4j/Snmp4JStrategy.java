@@ -215,9 +215,7 @@ public class Snmp4JStrategy implements SnmpStrategy {
             log().debug("getNext: OID: "+oid+" for Agent:"+agentConfig);
         }
         
-        SnmpObjId[] oids = { oid };
-        SnmpValue[] retvalues = getNext(agentConfig, oids);
-        return retvalues[0];
+        return getNext(agentConfig, new SnmpObjId[] { oid })[0];
     }
     
     /**
@@ -335,16 +333,16 @@ public class Snmp4JStrategy implements SnmpStrategy {
     private SnmpValue[] processResponse(Snmp4JAgentConfig agentConfig, ResponseEvent responseEvent) throws IOException {
         SnmpValue[] retvalues = { null };
 
-        if (responseEvent.getResponse() == null) {
-            log().warn("send: Timeout.  Agent: "+agentConfig);
-        } else if (responseEvent.getResponse().get(0).getSyntax() == SMIConstants.SYNTAX_NULL) {
-            retvalues[0] = null;
-        } else if (responseEvent.getError() != null) {
+        if (responseEvent.getError() != null) {
             log().warn("send: Error during get operation.  Error: "+responseEvent.getError().getLocalizedMessage(), responseEvent.getError());
+        } else if (responseEvent.getResponse() == null) {
+            log().warn("send: Timeout.  Agent: "+agentConfig);
         } else if (responseEvent.getResponse().getType() == PDU.REPORT) {
             log().warn("send: Error during get operation.  Report returned with varbinds: "+responseEvent.getResponse().getVariableBindings());
         } else if (responseEvent.getResponse().getVariableBindings().size() < 1) {
             log().warn("send: Received PDU with 0 varbinds.");
+        } else if (responseEvent.getResponse().get(0).getSyntax() == SMIConstants.SYNTAX_NULL) {
+            log().info("send: Null value returned in varbind: " + responseEvent.getResponse().get(0));
         } else {
             retvalues = convertResponseToValues(responseEvent);
 
