@@ -340,6 +340,7 @@ public class Snmp4JAgentConfig {
         if (isSnmpV3()) {
             // Make a new USM
             USM usm = new USM(SecurityProtocols.getInstance(), new OctetString(MPv3.createLocalEngineID()), 0);
+            // Add the specified user to the USM
             usm.addUser(
                 getSecurityName(),
                 new UsmUser(
@@ -350,7 +351,8 @@ public class Snmp4JAgentConfig {
                     getPrivPassPhrase()
                 )
             );
-            // Remove the old SNMPv3 MessageProcessingModel
+            // Remove the old SNMPv3 MessageProcessingModel. If you don't do this, you'll end up with
+            // two SNMPv3 MessageProcessingModel instances in the dispatcher and connections will fail.
             MessageProcessingModel oldModel = session.getMessageDispatcher().getMessageProcessingModel(MessageProcessingModel.MPv3);
             if (oldModel != null) {
                 session.getMessageDispatcher().removeMessageProcessingModel(oldModel);
@@ -358,35 +360,7 @@ public class Snmp4JAgentConfig {
             // Add a new SNMPv3 MessageProcessingModel with the newly-created USM
             session.getMessageDispatcher().addMessageProcessingModel(new MPv3(usm));
         }
-/*
-        // Use the constructor that lets you set up the session manually so that we have
-        // more precise control over the SNMPv3 initialization
-        Snmp session = new Snmp();
-        SecurityProtocols.getInstance().addDefaultProtocols();
-        MessageDispatcher disp = session.getMessageDispatcher();
-        // Create a SNMPv1 MessageProcessingModel
-        disp.addMessageProcessingModel(new MPv1());
-        // Create a SNMPv2 MessageProcessingModel
-        disp.addMessageProcessingModel(new MPv2c());
-
-        // Add the UDP transport
-        session.addTransportMapping(transport);
         
-        // Create a SNMPv3 MessageProcessingModel with a new USM
-        OctetString localEngineID = new OctetString(MPv3.createLocalEngineID());
-        USM usm = new USM(SecurityProtocols.getInstance(), localEngineID, 0);
-        if (isSnmpV3()) {
-            usm.addUser(
-                getSecurityName(),
-                new UsmUser(getSecurityName(),
-                getAuthProtocol(),
-                getAuthPassPhrase(),
-                getPrivProtocol(),
-                getPrivPassPhrase())
-            );
-        }
-        disp.addMessageProcessingModel(new MPv3(usm));
-*/
         return session;
     }
 
