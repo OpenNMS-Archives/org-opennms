@@ -49,6 +49,8 @@ import org.snmp4j.Snmp;
 import org.snmp4j.Target;
 import org.snmp4j.TransportMapping;
 import org.snmp4j.UserTarget;
+import org.snmp4j.mp.MPv3;
+import org.snmp4j.mp.MessageProcessingModel;
 import org.snmp4j.mp.SnmpConstants;
 import org.snmp4j.security.AuthMD5;
 import org.snmp4j.security.AuthSHA;
@@ -57,6 +59,8 @@ import org.snmp4j.security.PrivAES192;
 import org.snmp4j.security.PrivAES256;
 import org.snmp4j.security.PrivDES;
 import org.snmp4j.security.SecurityLevel;
+import org.snmp4j.security.SecurityProtocols;
+import org.snmp4j.security.USM;
 import org.snmp4j.security.UsmUser;
 import org.snmp4j.smi.Address;
 import org.snmp4j.smi.OID;
@@ -334,18 +338,58 @@ public class Snmp4JAgentConfig {
         Snmp session = new Snmp(transport);
         
         if (isSnmpV3()) {
-            session.getUSM().addUser(getSecurityName(),
-                    new UsmUser(getSecurityName(),
-                            getAuthProtocol(),
-                            getAuthPassPhrase(),
-                            getPrivProtocol(),
-                            getPrivPassPhrase()));
-            session.setReportHandler(new Snmp4JWalker.RemoveEngineTimeReportHandler(session));
+            // Make a new USM
+            USM usm = new USM(SecurityProtocols.getInstance(), new OctetString(MPv3.createLocalEngineID()), 0);
+            usm.addUser(
+                getSecurityName(),
+                new UsmUser(
+                    getSecurityName(),
+                    getAuthProtocol(),
+                    getAuthPassPhrase(),
+                    getPrivProtocol(),
+                    getPrivPassPhrase()
+                )
+            );
+            // Remove the old SNMPv3 MessageProcessingModel
+            MessageProcessingModel oldModel = session.getMessageDispatcher().getMessageProcessingModel(MessageProcessingModel.MPv3);
+            if (oldModel != null) {
+                session.getMessageDispatcher().removeMessageProcessingModel(oldModel);
+            }
+            // Add a new SNMPv3 MessageProcessingModel with the newly-created USM
+            session.getMessageDispatcher().addMessageProcessingModel(new MPv3(usm));
         }
+/*
+        // Use the constructor that lets you set up the session manually so that we have
+        // more precise control over the SNMPv3 initialization
+        Snmp session = new Snmp();
+        SecurityProtocols.getInstance().addDefaultProtocols();
+        MessageDispatcher disp = session.getMessageDispatcher();
+        // Create a SNMPv1 MessageProcessingModel
+        disp.addMessageProcessingModel(new MPv1());
+        // Create a SNMPv2 MessageProcessingModel
+        disp.addMessageProcessingModel(new MPv2c());
+
+        // Add the UDP transport
+        session.addTransportMapping(transport);
         
+        // Create a SNMPv3 MessageProcessingModel with a new USM
+        OctetString localEngineID = new OctetString(MPv3.createLocalEngineID());
+        USM usm = new USM(SecurityProtocols.getInstance(), localEngineID, 0);
+        if (isSnmpV3()) {
+            usm.addUser(
+                getSecurityName(),
+                new UsmUser(getSecurityName(),
+                getAuthProtocol(),
+                getAuthPassPhrase(),
+                getPrivProtocol(),
+                getPrivPassPhrase())
+            );
+        }
+        disp.addMessageProcessingModel(new MPv3(usm));
+*/
         return session;
     }
-    
+
     /**
      * Creates an SNMP4J PDU based on the SNMP4J version constants.
      * A v3 request requires a ScopedPDU.

@@ -51,7 +51,7 @@ import org.snmp4j.smi.VariableBinding;
  * @author <a href="mailto:dj@opennms.org">DJ Gregor</a>
  */
 public class Snmp4JStrategyTest extends MockSnmpAgentTestCase {
-    private Snmp4JStrategy m_strategy = new Snmp4JStrategy();
+    private final Snmp4JStrategy m_strategy = new Snmp4JStrategy();
 
     public void testNothing() throws Exception {
         // Just test our setUp()/tearDown()

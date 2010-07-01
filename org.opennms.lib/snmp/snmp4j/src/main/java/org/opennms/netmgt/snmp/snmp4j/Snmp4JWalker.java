@@ -214,50 +214,10 @@ public class Snmp4JWalker extends SnmpWalker {
                 : (WalkerPduBuilder)new GetBulkBuilder(maxVarsPerPdu));
     }
 
-    public static class RemoveEngineTimeReportHandler implements Snmp.ReportHandler {
-        private final Snmp.ReportHandler m_delegate;
-        private final USM m_usm;
-        private int m_usmStatsNotInTimeWindowsCounter;
-
-        public RemoveEngineTimeReportHandler(Snmp session) {
-            m_delegate = session.getReportHandler();
-            m_usm = session.getUSM();
-            m_usmStatsNotInTimeWindowsCounter = 0;
-        }
-
-        public void processReport(PduHandle handle, CommandResponderEvent event) {
-            PDU pdu = event.getPDU();
-            if (pdu.size() == 1) {
-                VariableBinding varbind = pdu.get(0);
-                if (varbind == null) {
-                    log().warn("Null varbind in REPORT PDU");
-                } else {
-                    // 
-                    if (SnmpConstants.usmStatsNotInTimeWindows.equals(varbind.getOid())) {
-                        m_usmStatsNotInTimeWindowsCounter++;
-                        // If we have received more than one usmStatsNotInTimeWindows REPORT, then reset the
-                        // stored engine time values for this engine ID
-                        if (m_usmStatsNotInTimeWindowsCounter > 1) {
-                            OctetString engineId = ((ScopedPDU)pdu).getContextEngineID();
-                            log().warn("Multiple usmStatsNotInTimeWindowsCounter REPORT PDUs received, resetting engine time for engine ID \"" + engineId + "\" to force renegotiation: " + event.toString());
-                            m_usm.removeEngineTime(engineId);
-                            m_usmStatsNotInTimeWindowsCounter = 0;
-                        }
-                    } else if (SnmpConstants.usmStatsUnknownEngineIDs.equals(varbind.getOid())) {
-                        // This PDU is thrown each time our SNMPv3 clients connect to an agent
-                        // using authPriv security as part of the security negotiation process.
-                    }
-                }
-            }
-            m_delegate.processReport(handle, event);
-        }
-    }
-
     protected void sendNextPdu(WalkerPduBuilder pduBuilder) throws IOException {
         Snmp4JPduBuilder snmp4JPduBuilder = (Snmp4JPduBuilder)pduBuilder;
         if (m_session == null) {
             m_session = m_agentConfig.createSnmpSession();
-            m_session.setReportHandler(new RemoveEngineTimeReportHandler(m_session));
             m_session.listen();
         }
         
