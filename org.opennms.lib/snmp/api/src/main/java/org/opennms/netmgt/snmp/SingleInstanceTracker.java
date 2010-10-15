@@ -31,7 +31,6 @@
 //
 package org.opennms.netmgt.snmp;
 
-import org.apache.log4j.Category;
 import org.opennms.core.utils.ThreadCategory;
 
 public class SingleInstanceTracker extends CollectionTracker {

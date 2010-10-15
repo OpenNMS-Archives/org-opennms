@@ -39,7 +39,6 @@ package org.opennms.netmgt.snmp;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.log4j.Category;
 import org.opennms.core.utils.ThreadCategory;
 
 public class TrapIdentity {

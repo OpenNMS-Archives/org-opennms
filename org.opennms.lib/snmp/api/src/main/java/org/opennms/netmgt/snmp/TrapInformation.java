@@ -33,7 +33,6 @@ package org.opennms.netmgt.snmp;
 
 import java.net.InetAddress;
 
-import org.apache.log4j.Category;
 import org.opennms.core.utils.ThreadCategory;
 
 public abstract class TrapInformation implements TrapNotification {

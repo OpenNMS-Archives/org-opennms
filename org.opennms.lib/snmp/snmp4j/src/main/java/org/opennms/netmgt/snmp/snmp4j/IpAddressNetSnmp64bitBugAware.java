@@ -37,7 +37,6 @@ package org.opennms.netmgt.snmp.snmp4j;
 import java.io.IOException;
 import java.net.InetAddress;
 
-import org.apache.log4j.Category;
 import org.opennms.core.utils.ThreadCategory;
 import org.snmp4j.asn1.BER;
 import org.snmp4j.asn1.BERInputStream;
