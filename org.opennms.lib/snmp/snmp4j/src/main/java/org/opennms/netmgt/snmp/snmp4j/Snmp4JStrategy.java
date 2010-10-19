@@ -330,31 +330,31 @@ public class Snmp4JStrategy implements SnmpStrategy {
     /**
      * TODO: Merge this logic with {@link Snmp4JWalker.Snmp4JResponseListener#processResponse(PDU response)}
      */
-    private SnmpValue[] processResponse(Snmp4JAgentConfig agentConfig, ResponseEvent responseEvent) throws IOException {
+    private static SnmpValue[] processResponse(Snmp4JAgentConfig agentConfig, ResponseEvent responseEvent) throws IOException {
         SnmpValue[] retvalues = { null };
 
         if (responseEvent.getResponse() == null) {
-            log().warn("send: Timeout.  Agent: "+agentConfig);
+            log().warn("processResponse: Timeout.  Agent: "+agentConfig);
         } else if (responseEvent.getError() != null) {
-            log().warn("send: Error during get operation.  Error: "+responseEvent.getError().getLocalizedMessage(), responseEvent.getError());
+            log().warn("processResponse: Error during get operation.  Error: "+responseEvent.getError().getLocalizedMessage(), responseEvent.getError());
         } else if (responseEvent.getResponse().getType() == PDU.REPORT) {
-            log().warn("send: Error during get operation.  Report returned with varbinds: "+responseEvent.getResponse().getVariableBindings());
+            log().warn("processResponse: Error during get operation.  Report returned with varbinds: "+responseEvent.getResponse().getVariableBindings());
         } else if (responseEvent.getResponse().getVariableBindings().size() < 1) {
-            log().warn("send: Received PDU with 0 varbinds.");
+            log().warn("processResponse: Received PDU with 0 varbinds.");
         } else if (responseEvent.getResponse().get(0).getSyntax() == SMIConstants.SYNTAX_NULL) {
-            log().info("send: Null value returned in varbind: " + responseEvent.getResponse().get(0));
+            log().info("processResponse: Null value returned in varbind: " + responseEvent.getResponse().get(0));
         } else {
             retvalues = convertResponseToValues(responseEvent);
 
             if (log().isDebugEnabled()) {
-                log().debug("send: Snmp operation successful. Value: "+Arrays.toString(retvalues));
+                log().debug("processResponse: Snmp operation successful. Value: "+Arrays.toString(retvalues));
             }
         }
 
         return retvalues;
     }
 
-    private SnmpValue[] convertResponseToValues(ResponseEvent responseEvent) {
+    private static SnmpValue[] convertResponseToValues(ResponseEvent responseEvent) {
         SnmpValue[] retvalues = new Snmp4JValue[responseEvent.getResponse().getVariableBindings().size()];
         
         for (int i = 0; i < retvalues.length; i++) {
@@ -364,8 +364,8 @@ public class Snmp4JStrategy implements SnmpStrategy {
         return retvalues;
     }
 
-    private ThreadCategory log() {
-        return ThreadCategory.getInstance(getClass());
+    private static ThreadCategory log() {
+        return ThreadCategory.getInstance(Snmp4JStrategy.class);
     }
     
     public SnmpValueFactory getValueFactory() {
