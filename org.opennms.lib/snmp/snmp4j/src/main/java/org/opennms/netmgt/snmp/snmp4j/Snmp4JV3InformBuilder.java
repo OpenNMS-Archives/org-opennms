@@ -36,12 +36,13 @@
 //
 package org.opennms.netmgt.snmp.snmp4j;
 
+import org.opennms.netmgt.snmp.SnmpV3TrapBuilder;
 import org.snmp4j.ScopedPDU;
 
-public class Snmp4JV3InformBuilder extends Snmp4JV2TrapBuilder  {
+public class Snmp4JV3InformBuilder extends Snmp4JV2TrapBuilder implements SnmpV3TrapBuilder {
     
     protected Snmp4JV3InformBuilder(Snmp4JStrategy strategy) {
-        super(strategy, new ScopedPDU(), ScopedPDU.TRAP);
+        super(strategy, new ScopedPDU(), ScopedPDU.INFORM);
     }
     
 }

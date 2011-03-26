@@ -8,11 +8,6 @@
 //
 // OpenNMS(R) is a registered trademark of The OpenNMS Group, Inc.
 //
-// Modifications:
-//
-// 2007 Jun 22: Be explicit about visibility and pass around the
-//              Snmp4JStrategy that created us. - dj@opennms.org
-//
 // Original code base Copyright (C) 1999-2001 Oculan Corp.  All rights reserved.
 //
 // This program is free software; you can redistribute it and/or modify
@@ -34,15 +29,10 @@
 //     http://www.opennms.org/
 //     http://www.opennms.com/
 //
-package org.opennms.netmgt.snmp.snmp4j;
+package org.opennms.netmgt.snmp;
 
-import org.opennms.netmgt.snmp.SnmpV2TrapBuilder;
-import org.snmp4j.PDU;
+public interface SnmpV2TrapBuilder extends SnmpTrapBuilder {
 
-public class Snmp4JV2InformBuilder extends Snmp4JV2TrapBuilder implements SnmpV2TrapBuilder {
-    
-    protected Snmp4JV2InformBuilder(Snmp4JStrategy strategy) {
-        super(strategy, new PDU(), PDU.INFORM);
-    }
-    
+    SnmpValue[] sendInform(String destAddr, int destPort, int timeout, int retries, String community) throws Exception;
+
 }

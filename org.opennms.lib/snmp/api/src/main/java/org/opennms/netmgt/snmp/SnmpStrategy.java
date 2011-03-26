@@ -60,10 +60,10 @@ public interface SnmpStrategy {
     
     SnmpTrapBuilder getV2TrapBuilder();
 
-    SnmpTrapBuilder getV3TrapBuilder();
+    SnmpV3TrapBuilder getV3TrapBuilder();
 
-    SnmpTrapBuilder getV2InformBuilder();
+    SnmpV2TrapBuilder getV2InformBuilder();
 
-    SnmpTrapBuilder getV3InformBuilder();
+    SnmpV3TrapBuilder getV3InformBuilder();
 
 }

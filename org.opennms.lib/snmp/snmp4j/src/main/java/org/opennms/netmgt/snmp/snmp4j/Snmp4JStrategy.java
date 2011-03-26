@@ -59,6 +59,8 @@ import org.opennms.netmgt.snmp.SnmpObjId;
 import org.opennms.netmgt.snmp.SnmpStrategy;
 import org.opennms.netmgt.snmp.SnmpTrapBuilder;
 import org.opennms.netmgt.snmp.SnmpV1TrapBuilder;
+import org.opennms.netmgt.snmp.SnmpV2TrapBuilder;
+import org.opennms.netmgt.snmp.SnmpV3TrapBuilder;
 import org.opennms.netmgt.snmp.SnmpValue;
 import org.opennms.netmgt.snmp.SnmpValueFactory;
 import org.opennms.netmgt.snmp.SnmpWalker;
@@ -468,15 +470,15 @@ public class Snmp4JStrategy implements SnmpStrategy {
         return new Snmp4JV2TrapBuilder(this);
     }
 
-    public SnmpTrapBuilder getV3TrapBuilder() {
+    public SnmpV3TrapBuilder getV3TrapBuilder() {
         return new Snmp4JV3TrapBuilder(this);
     }
 
-    public SnmpTrapBuilder getV2InformBuilder() {
+    public SnmpV2TrapBuilder getV2InformBuilder() {
         return new Snmp4JV2InformBuilder(this);
     }
 
-    public SnmpTrapBuilder getV3InformBuilder() {
+    public SnmpV3TrapBuilder getV3InformBuilder() {
         return new Snmp4JV3InformBuilder(this);
     }
 

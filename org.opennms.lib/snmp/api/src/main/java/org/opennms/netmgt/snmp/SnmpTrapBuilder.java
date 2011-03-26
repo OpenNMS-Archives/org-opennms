@@ -36,14 +36,6 @@ public interface SnmpTrapBuilder {
 
     void send(String destAddr, int destPort, String community) throws Exception;
 
-    SnmpValue[] sendInform(String destAddr, int destPort, int timeout, int retries, String community) throws Exception;
-
-    void send(String destAddr, int destPort, int securityLevel, String securityname, 
-    		String authPassPhrase, String authProtocol, String privPassPhrase, String privprotocol) throws Exception;
-
-    SnmpValue[] sendInform(String destAddr, int destPort, int timeout, int retries, int securityLevel, String securityname, 
-    		String authPassPhrase, String authProtocol, String privPassPhrase, String privprotocol) throws Exception;
-
     void sendTest(String destAddr, int destPort, String community) throws Exception;
 
     void addVarBind(SnmpObjId name, SnmpValue value);

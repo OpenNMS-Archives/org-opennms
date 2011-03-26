@@ -50,6 +50,8 @@ import org.opennms.netmgt.snmp.SnmpObjId;
 import org.opennms.netmgt.snmp.SnmpStrategy;
 import org.opennms.netmgt.snmp.SnmpTrapBuilder;
 import org.opennms.netmgt.snmp.SnmpV1TrapBuilder;
+import org.opennms.netmgt.snmp.SnmpV2TrapBuilder;
+import org.opennms.netmgt.snmp.SnmpV3TrapBuilder;
 import org.opennms.netmgt.snmp.SnmpValue;
 import org.opennms.netmgt.snmp.SnmpValueFactory;
 import org.opennms.netmgt.snmp.SnmpWalker;
@@ -376,15 +378,15 @@ public class JoeSnmpStrategy implements SnmpStrategy {
         }
     }
 
-	public SnmpTrapBuilder getV3TrapBuilder() {
+	public SnmpV3TrapBuilder getV3TrapBuilder() {
 		throw new UnsupportedOperationException();
 	}
 
-	public SnmpTrapBuilder getV2InformBuilder() {
+	public SnmpV2TrapBuilder getV2InformBuilder() {
 		throw new UnsupportedOperationException();
 	}
 
-	public SnmpTrapBuilder getV3InformBuilder() {
+	public SnmpV3TrapBuilder getV3InformBuilder() {
 		throw new UnsupportedOperationException();
 	}
 
