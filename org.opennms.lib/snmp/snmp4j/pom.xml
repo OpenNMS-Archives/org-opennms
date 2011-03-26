@@ -32,5 +32,12 @@
       <scope>test</scope>
       <version>1.4.1</version>
     </dependency>
+    <dependency>
+      <groupId>org.opennms.dependencies</groupId>
+      <artifactId>spring-dependencies</artifactId>
+      <version>[1.7.0,2.0.0)</version>
+      <scope>test</scope>
+      <type>pom</type>
+    </dependency>
   </dependencies>
 </project>
