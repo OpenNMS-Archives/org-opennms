@@ -62,4 +62,5 @@ public class JoeSnmpV2TrapBuilder implements SnmpTrapBuilder {
         m_pdu.addVarBind(new SnmpVarBind(new SnmpObjectId(name.getIds()), val));
     }
 
+
 }
