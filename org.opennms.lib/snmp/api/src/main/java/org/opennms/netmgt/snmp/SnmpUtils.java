@@ -181,6 +181,11 @@ public class SnmpUtils {
         return getStrategy().getV2TrapBuilder();
     }
 
+    public static SnmpTrapBuilder getV3TrapBuilder() {
+        return getStrategy().getV3TrapBuilder();
+    }
+
+
     /**
      * <p>If the value is in the unprintable ASCII range (< 32) and is not a:</p>
      * <ul>

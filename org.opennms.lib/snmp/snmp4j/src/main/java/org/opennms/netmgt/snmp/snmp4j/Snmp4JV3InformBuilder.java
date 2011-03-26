@@ -8,6 +8,11 @@
 //
 // OpenNMS(R) is a registered trademark of The OpenNMS Group, Inc.
 //
+// Modifications:
+//
+// 2007 Jun 22: Be explicit about visibility and pass around the
+//              Snmp4JStrategy that created us. - dj@opennms.org
+//
 // Original code base Copyright (C) 1999-2001 Oculan Corp.  All rights reserved.
 //
 // This program is free software; you can redistribute it and/or modify
@@ -29,23 +34,14 @@
 //     http://www.opennms.org/
 //     http://www.opennms.com/
 //
-package org.opennms.netmgt.snmp;
+package org.opennms.netmgt.snmp.snmp4j;
 
+import org.snmp4j.ScopedPDU;
 
-public interface SnmpTrapBuilder {
-
-    void send(String destAddr, int destPort, String community) throws Exception;
-
-    SnmpValue[] sendInform(String destAddr, int destPort, int timeout, int retries, String community) throws Exception;
-
-    void send(String destAddr, int destPort, int securityLevel, String securityname, 
-    		String authPassPhrase, String authProtocol, String privPassPhrase, String privprotocol) throws Exception;
-
-    SnmpValue[] sendInform(String destAddr, int destPort, int timeout, int retries, int securityLevel, String securityname, 
-    		String authPassPhrase, String authProtocol, String privPassPhrase, String privprotocol) throws Exception;
-
-    void sendTest(String destAddr, int destPort, String community) throws Exception;
-
-    void addVarBind(SnmpObjId name, SnmpValue value);
-
+public class Snmp4JV3InformBuilder extends Snmp4JV2TrapBuilder  {
+    
+    protected Snmp4JV3InformBuilder(Snmp4JStrategy strategy) {
+        super(strategy, new ScopedPDU(), ScopedPDU.TRAP);
+    }
+    
 }

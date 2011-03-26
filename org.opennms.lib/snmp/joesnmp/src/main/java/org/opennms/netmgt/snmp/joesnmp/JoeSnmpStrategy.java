@@ -376,5 +376,17 @@ public class JoeSnmpStrategy implements SnmpStrategy {
         }
     }
 
+	public SnmpTrapBuilder getV3TrapBuilder() {
+		throw new UnsupportedOperationException();
+	}
+
+	public SnmpTrapBuilder getV2InformBuilder() {
+		throw new UnsupportedOperationException();
+	}
+
+	public SnmpTrapBuilder getV3InformBuilder() {
+		throw new UnsupportedOperationException();
+	}
+
 
 }

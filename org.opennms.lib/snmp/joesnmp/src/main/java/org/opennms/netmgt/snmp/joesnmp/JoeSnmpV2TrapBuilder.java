@@ -62,5 +62,21 @@ public class JoeSnmpV2TrapBuilder implements SnmpTrapBuilder {
         m_pdu.addVarBind(new SnmpVarBind(new SnmpObjectId(name.getIds()), val));
     }
 
+	public SnmpValue[] sendInform(String destAddr, int destPort, int timeout,
+			int retries, String community) throws Exception {
+		throw new UnsupportedOperationException();
+	}
 
+	public void send(String destAddr, int destPort, int securityLevel,
+			String securityname, String authPassPhrase, String authProtocol,
+			String privPassPhrase, String privprotocol) throws Exception {
+		throw new UnsupportedOperationException();		
+	}
+
+	public SnmpValue[] sendInform(String destAddr, int destPort, int timeout,
+			int retries, int securityLevel, String securityname,
+			String authPassPhrase, String authProtocol, String privPassPhrase,
+			String privprotocol) throws Exception {
+		throw new UnsupportedOperationException();
+	}
 }
