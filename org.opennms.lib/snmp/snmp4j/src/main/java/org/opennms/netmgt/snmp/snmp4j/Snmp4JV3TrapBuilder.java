@@ -36,7 +36,9 @@
 //
 package org.opennms.netmgt.snmp.snmp4j;
 
+import org.opennms.netmgt.snmp.SnmpConfiguration;
 import org.opennms.netmgt.snmp.SnmpV3TrapBuilder;
+import org.opennms.netmgt.snmp.SnmpValue;
 import org.snmp4j.ScopedPDU;
 
 public class Snmp4JV3TrapBuilder extends Snmp4JV2TrapBuilder implements SnmpV3TrapBuilder {
@@ -45,4 +47,10 @@ public class Snmp4JV3TrapBuilder extends Snmp4JV2TrapBuilder implements SnmpV3Tr
         super(strategy, new ScopedPDU(), ScopedPDU.TRAP);
     }
     
+    @Override
+    public void send(String destAddr, int destPort, String community) throws Exception {
+    	super.send(destAddr, destPort, SnmpConfiguration.NOAUTH_NOPRIV, community, SnmpConfiguration.DEFAULT_AUTH_PASS_PHRASE,
+    			SnmpConfiguration.DEFAULT_AUTH_PROTOCOL, SnmpConfiguration.DEFAULT_PRIV_PASS_PHRASE, SnmpConfiguration.DEFAULT_PRIV_PROTOCOL);
+    }  
+
 }
