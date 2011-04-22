@@ -561,4 +561,8 @@ public class Snmp4JStrategy implements SnmpStrategy {
         }
     }
 
+	public byte[] getLocalEngineID() {
+		return MPv3.createLocalEngineID();
+	}
+
 }

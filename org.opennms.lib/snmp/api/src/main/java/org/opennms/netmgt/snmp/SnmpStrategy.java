@@ -65,5 +65,7 @@ public interface SnmpStrategy {
     SnmpV2TrapBuilder getV2InformBuilder();
 
     SnmpV3TrapBuilder getV3InformBuilder();
+    
+    byte[] getLocalEngineID();
 
 }

@@ -390,5 +390,9 @@ public class JoeSnmpStrategy implements SnmpStrategy {
 		throw new UnsupportedOperationException();
 	}
 
+	public byte[] getLocalEngineID() {
+		throw new UnsupportedOperationException();
+	}
+
 
 }
