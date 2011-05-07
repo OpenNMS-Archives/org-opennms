@@ -43,6 +43,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.lang.builder.CompareToBuilder;
+import org.opennms.core.utils.ThreadCategory;
 
 public class TableTracker extends CollectionTracker implements RowCallback, RowResultFactory {
 
@@ -105,7 +106,8 @@ public class TableTracker extends CollectionTracker implements RowCallback, RowR
     }
 
     public void storeResult(SnmpResult res) {
-        System.err.println(String.format("storeResult: %s", res));
+        //System.err.println(String.format("storeResult: %s", res));
+    	ThreadCategory.getInstance(SnmpResult.class).debug(String.format("storeResult: %s", res));
         m_tableResult.storeResult(res);
     }
     
