@@ -105,12 +105,12 @@ public class SnmpObjId implements Comparable {
     }
     
     private static int[] convertStringToInts(String oid) {
-    	    oid = oid.trim();
+    	oid = oid.trim();
         if (oid.startsWith(".")) {
             oid = oid.substring(1);
         }
         
-        StringTokenizer tokenizer = new StringTokenizer(oid, ".");
+        final StringTokenizer tokenizer = new StringTokenizer(oid, ".");
         int[] ids = new int[tokenizer.countTokens()];
         int index = 0;
         while (tokenizer.hasMoreTokens()) {
