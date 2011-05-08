@@ -8,6 +8,11 @@
 //
 // OpenNMS(R) is a registered trademark of The OpenNMS Group, Inc.
 //
+// Modifications:
+//
+// 2007 Jun 22: Be explicit about visibility and pass around the
+//              Snmp4JStrategy that created us. - dj@opennms.org
+//
 // Original code base Copyright (C) 1999-2001 Oculan Corp.  All rights reserved.
 //
 // This program is free software; you can redistribute it and/or modify
@@ -29,43 +34,22 @@
 //     http://www.opennms.org/
 //     http://www.opennms.com/
 //
-package org.opennms.netmgt.snmp;
+package org.opennms.netmgt.snmp.snmp4j;
 
-import java.io.IOException;
+import org.opennms.netmgt.snmp.SnmpConfiguration;
+import org.opennms.netmgt.snmp.SnmpV3TrapBuilder;
+import org.opennms.netmgt.snmp.SnmpValue;
+import org.snmp4j.ScopedPDU;
 
-
-public interface SnmpStrategy {
-
-    SnmpWalker createWalker(SnmpAgentConfig agentConfig, String name, CollectionTracker tracker);
-
-    SnmpValue set(SnmpAgentConfig agentConfig, SnmpObjId oid, SnmpValue value);
-
-    SnmpValue[] set(SnmpAgentConfig agentConfig, SnmpObjId oid[], SnmpValue value[]);
-
-    SnmpValue get(SnmpAgentConfig agentConfig, SnmpObjId oid);
-    SnmpValue[] get(SnmpAgentConfig agentConfig, SnmpObjId[] oids);
-
-    SnmpValue getNext(SnmpAgentConfig agentConfig, SnmpObjId oid);
-    SnmpValue[] getNext(SnmpAgentConfig agentConfig, SnmpObjId[] oids);
+public class Snmp4JV3InformBuilder extends Snmp4JV2TrapBuilder implements SnmpV3TrapBuilder {
     
-    SnmpValue[] getBulk(SnmpAgentConfig agentConfig, SnmpObjId[] oids);
-
-    void registerForTraps(TrapNotificationListener listener, TrapProcessorFactory processorFactory, int snmpTrapPort) throws IOException;
-
-    void unregisterForTraps(TrapNotificationListener listener, int snmpTrapPort) throws IOException;
-
-    SnmpValueFactory getValueFactory();
-
-    SnmpV1TrapBuilder getV1TrapBuilder();
+    protected Snmp4JV3InformBuilder(Snmp4JStrategy strategy) {
+        super(strategy, new ScopedPDU(), ScopedPDU.INFORM);
+    }
     
-    SnmpTrapBuilder getV2TrapBuilder();
-
-    SnmpV3TrapBuilder getV3TrapBuilder();
-
-    SnmpV2TrapBuilder getV2InformBuilder();
-
-    SnmpV3TrapBuilder getV3InformBuilder();
-    
-    byte[] getLocalEngineID();
-
+    @Override
+    public SnmpValue[] sendInform(String destAddr, int destPort, int timeout, int retry, String community) throws Exception {
+    	return super.sendInform(destAddr, destPort, 1000, 3, SnmpConfiguration.NOAUTH_NOPRIV, community, SnmpConfiguration.DEFAULT_AUTH_PASS_PHRASE,
+    			SnmpConfiguration.DEFAULT_AUTH_PROTOCOL, SnmpConfiguration.DEFAULT_PRIV_PASS_PHRASE, SnmpConfiguration.DEFAULT_PRIV_PROTOCOL);
+    }  
 }

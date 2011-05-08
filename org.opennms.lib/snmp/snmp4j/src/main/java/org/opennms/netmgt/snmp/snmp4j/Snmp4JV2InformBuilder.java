@@ -8,6 +8,11 @@
 //
 // OpenNMS(R) is a registered trademark of The OpenNMS Group, Inc.
 //
+// Modifications:
+//
+// 2007 Jun 22: Be explicit about visibility and pass around the
+//              Snmp4JStrategy that created us. - dj@opennms.org
+//
 // Original code base Copyright (C) 1999-2001 Oculan Corp.  All rights reserved.
 //
 // This program is free software; you can redistribute it and/or modify
@@ -29,43 +34,15 @@
 //     http://www.opennms.org/
 //     http://www.opennms.com/
 //
-package org.opennms.netmgt.snmp;
+package org.opennms.netmgt.snmp.snmp4j;
 
-import java.io.IOException;
+import org.opennms.netmgt.snmp.SnmpV2TrapBuilder;
+import org.snmp4j.PDU;
 
-
-public interface SnmpStrategy {
-
-    SnmpWalker createWalker(SnmpAgentConfig agentConfig, String name, CollectionTracker tracker);
-
-    SnmpValue set(SnmpAgentConfig agentConfig, SnmpObjId oid, SnmpValue value);
-
-    SnmpValue[] set(SnmpAgentConfig agentConfig, SnmpObjId oid[], SnmpValue value[]);
-
-    SnmpValue get(SnmpAgentConfig agentConfig, SnmpObjId oid);
-    SnmpValue[] get(SnmpAgentConfig agentConfig, SnmpObjId[] oids);
-
-    SnmpValue getNext(SnmpAgentConfig agentConfig, SnmpObjId oid);
-    SnmpValue[] getNext(SnmpAgentConfig agentConfig, SnmpObjId[] oids);
+public class Snmp4JV2InformBuilder extends Snmp4JV2TrapBuilder implements SnmpV2TrapBuilder {
     
-    SnmpValue[] getBulk(SnmpAgentConfig agentConfig, SnmpObjId[] oids);
-
-    void registerForTraps(TrapNotificationListener listener, TrapProcessorFactory processorFactory, int snmpTrapPort) throws IOException;
-
-    void unregisterForTraps(TrapNotificationListener listener, int snmpTrapPort) throws IOException;
-
-    SnmpValueFactory getValueFactory();
-
-    SnmpV1TrapBuilder getV1TrapBuilder();
+    protected Snmp4JV2InformBuilder(Snmp4JStrategy strategy) {
+        super(strategy, new PDU(), PDU.INFORM);
+    }
     
-    SnmpTrapBuilder getV2TrapBuilder();
-
-    SnmpV3TrapBuilder getV3TrapBuilder();
-
-    SnmpV2TrapBuilder getV2InformBuilder();
-
-    SnmpV3TrapBuilder getV3InformBuilder();
-    
-    byte[] getLocalEngineID();
-
 }

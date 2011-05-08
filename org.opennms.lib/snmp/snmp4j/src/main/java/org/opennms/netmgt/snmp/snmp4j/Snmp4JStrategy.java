@@ -59,6 +59,8 @@ import org.opennms.netmgt.snmp.SnmpObjId;
 import org.opennms.netmgt.snmp.SnmpStrategy;
 import org.opennms.netmgt.snmp.SnmpTrapBuilder;
 import org.opennms.netmgt.snmp.SnmpV1TrapBuilder;
+import org.opennms.netmgt.snmp.SnmpV2TrapBuilder;
+import org.opennms.netmgt.snmp.SnmpV3TrapBuilder;
 import org.opennms.netmgt.snmp.SnmpValue;
 import org.opennms.netmgt.snmp.SnmpValueFactory;
 import org.opennms.netmgt.snmp.SnmpWalker;
@@ -69,6 +71,7 @@ import org.snmp4j.MessageDispatcher;
 import org.snmp4j.PDU;
 import org.snmp4j.PDUv1;
 import org.snmp4j.SNMP4JSettings;
+import org.snmp4j.ScopedPDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.TransportMapping;
 import org.snmp4j.event.ResponseEvent;
@@ -466,7 +469,19 @@ public class Snmp4JStrategy implements SnmpStrategy {
     public SnmpTrapBuilder getV2TrapBuilder() {
         return new Snmp4JV2TrapBuilder(this);
     }
-    
+
+    public SnmpV3TrapBuilder getV3TrapBuilder() {
+        return new Snmp4JV3TrapBuilder(this);
+    }
+
+    public SnmpV2TrapBuilder getV2InformBuilder() {
+        return new Snmp4JV2InformBuilder(this);
+    }
+
+    public SnmpV3TrapBuilder getV3InformBuilder() {
+        return new Snmp4JV3InformBuilder(this);
+    }
+
     protected SnmpAgentConfig buildAgentConfig(String address, int port, String community, PDU pdu) throws UnknownHostException {
         SnmpAgentConfig config = new SnmpAgentConfig();
         config.setAddress(InetAddress.getByName(address));
@@ -474,7 +489,47 @@ public class Snmp4JStrategy implements SnmpStrategy {
         config.setVersion(pdu instanceof PDUv1 ? SnmpAgentConfig.VERSION1 : SnmpAgentConfig.VERSION2C);
         return config;
     }
-    
+
+    protected SnmpAgentConfig buildAgentConfig(String address, int port, int timeout, int retries, String community, PDU pdu) throws UnknownHostException {
+        SnmpAgentConfig config = buildAgentConfig(address, port, community, pdu);
+        config.setTimeout(timeout);
+        config.setRetries(retries);
+        return config;
+    }
+
+	protected SnmpAgentConfig buildAgentConfig(String address, int port, int securityLevel,
+			String securityName, String authPassPhrase, String authProtocol,
+			String privPassPhrase, String privProtocol, PDU pdu) throws UnknownHostException, Exception {
+			
+		if (! (pdu instanceof ScopedPDU)) 
+				throw new Exception();
+
+			SnmpAgentConfig config = new SnmpAgentConfig();
+	        config.setAddress(InetAddress.getByName(address));
+	        config.setPort(port);
+	        config.setVersion(SnmpAgentConfig.VERSION3);
+	        config.setSecurityLevel(securityLevel);
+	        config.setSecurityName(securityName);
+	        config.setAuthPassPhrase(authPassPhrase);
+	        config.setAuthProtocol(authProtocol);
+	        config.setPrivPassPhrase(privPassPhrase);
+	        config.setPrivProtocol(privProtocol);
+	        return config;
+
+	}
+
+	protected SnmpAgentConfig buildAgentConfig(String address, int port, int timeout, int retries, int securityLevel,
+			String securityName, String authPassPhrase, String authProtocol,
+			String privPassPhrase, String privProtocol, PDU pdu) throws UnknownHostException, Exception {
+			
+			SnmpAgentConfig config = buildAgentConfig(address, port, securityLevel, securityName, authPassPhrase, authProtocol, privPassPhrase, privProtocol, pdu);
+	        config.setTimeout(timeout);
+	        config.setRetries(retries);
+	        return config;
+
+	}
+
+	
     public void sendTest(String agentAddress, int port, String community, PDU pdu) {
         for (RegistrationInfo info : s_registrations.values()) {
             if (port == info.getPort()) {
@@ -505,4 +560,9 @@ public class Snmp4JStrategy implements SnmpStrategy {
             ThreadCategory.getInstance(Snmp4JStrategy.class).error("error closing SNMP connection: " + e, e);
         }
     }
+
+	public byte[] getLocalEngineID() {
+		return MPv3.createLocalEngineID();
+	}
+
 }

@@ -31,41 +31,13 @@
 //
 package org.opennms.netmgt.snmp;
 
-import java.io.IOException;
 
+public interface SnmpV3TrapBuilder extends SnmpV2TrapBuilder {
 
-public interface SnmpStrategy {
+    void send(String destAddr, int destPort, int securityLevel, String securityname, 
+    		String authPassPhrase, String authProtocol, String privPassPhrase, String privprotocol) throws Exception;
 
-    SnmpWalker createWalker(SnmpAgentConfig agentConfig, String name, CollectionTracker tracker);
-
-    SnmpValue set(SnmpAgentConfig agentConfig, SnmpObjId oid, SnmpValue value);
-
-    SnmpValue[] set(SnmpAgentConfig agentConfig, SnmpObjId oid[], SnmpValue value[]);
-
-    SnmpValue get(SnmpAgentConfig agentConfig, SnmpObjId oid);
-    SnmpValue[] get(SnmpAgentConfig agentConfig, SnmpObjId[] oids);
-
-    SnmpValue getNext(SnmpAgentConfig agentConfig, SnmpObjId oid);
-    SnmpValue[] getNext(SnmpAgentConfig agentConfig, SnmpObjId[] oids);
-    
-    SnmpValue[] getBulk(SnmpAgentConfig agentConfig, SnmpObjId[] oids);
-
-    void registerForTraps(TrapNotificationListener listener, TrapProcessorFactory processorFactory, int snmpTrapPort) throws IOException;
-
-    void unregisterForTraps(TrapNotificationListener listener, int snmpTrapPort) throws IOException;
-
-    SnmpValueFactory getValueFactory();
-
-    SnmpV1TrapBuilder getV1TrapBuilder();
-    
-    SnmpTrapBuilder getV2TrapBuilder();
-
-    SnmpV3TrapBuilder getV3TrapBuilder();
-
-    SnmpV2TrapBuilder getV2InformBuilder();
-
-    SnmpV3TrapBuilder getV3InformBuilder();
-    
-    byte[] getLocalEngineID();
+    SnmpValue[] sendInform(String destAddr, int destPort, int timeout, int retries, int securityLevel, String securityname, 
+    		String authPassPhrase, String authProtocol, String privPassPhrase, String privprotocol) throws Exception;
 
 }
