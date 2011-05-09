@@ -8,7 +8,6 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.opennms</groupId>
   <artifactId>org.opennms.root</artifactId>
-  <version>1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>OpenNMS.org Root</name>
 
@@ -21,9 +20,7 @@
   <modules>
     <module>master</module>
     <module>org.opennms.lib</module>
-    <module>org.opennms.lib/joesnmp</module>
     <module>org.opennms.lib/service-registration</module>
-    <module>org.opennms.lib/snmp</module>
     <module>org.opennms.lib/tracker</module>
   </modules>
 </project>
