@@ -35,8 +35,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.log4j.Category;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * RequestLocatorImpl
@@ -45,7 +45,7 @@ import org.apache.log4j.Logger;
  */
 public class IDBasedRequestLocator<ReqIdT, ReqT extends Request<ReqIdT, ReqT, ReplyT>, ReplyT extends ResponseWithId<ReqIdT>> implements RequestLocator<ReqT, ReplyT> {
 
-    private static final Logger s_log = Logger.getLogger(RequestTracker.class);
+    private static final Logger s_log = LoggerFactory.getLogger(IDBasedRequestLocator.class);
     
     private Map<ReqIdT, ReqT> m_pendingRequests = Collections.synchronizedMap(new HashMap<ReqIdT, ReqT>());
     
@@ -68,7 +68,7 @@ public class IDBasedRequestLocator<ReqIdT, ReqT extends Request<ReqIdT, ReqT, Re
     public ReqT locateMatchingRequest(ReplyT reply) {
 
         ReqIdT id = reply.getRequestId();
-        debugf("Looking for request with Id: %s in map %s", id, m_pendingRequests);
+        s_log.debug("Looking for request with Id: {} in map {}", id, m_pendingRequests);
         ReqT request = m_pendingRequests.get(id);
         return request;
 
@@ -86,18 +86,4 @@ public class IDBasedRequestLocator<ReqIdT, ReqT extends Request<ReqIdT, ReqT, Re
         }
         return true;
     }
-
-    private Category log() {
-        return s_log;
-    }
-    
-    private void debugf(String format, Object... args) {
-        if (log().isDebugEnabled()) {
-            log().debug(String.format(format, args));
-        }
-    }
-
-
-
-
 }

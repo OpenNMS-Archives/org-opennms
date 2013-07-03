@@ -42,8 +42,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.log4j.Category;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
@@ -117,7 +117,7 @@ import org.apache.log4j.Logger;
  */
 public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extends Response> {
     
-    private static final Logger s_log = Logger.getLogger(RequestTracker.class);
+    private static final Logger s_log = LoggerFactory.getLogger(RequestTracker.class);
     
     private RequestLocator<ReqT, ReplyT> m_requestLocator;
     private Messenger<ReqT, ReplyT> m_messenger;
@@ -150,9 +150,9 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
 	            try {
 	                processReplies();
 	            } catch (InterruptedException e) {
-                    errorf("Thread %s interrupted!", this);
+                    s_log.error("Thread {} interrupted!", this);
 	            } catch (Throwable t) {
-                    errorf(t, "Unexpected exception on Thread %s!", this);
+                    s_log.error("Unexpected exception on Thread " + this + "!", t);
 	            }
 	        }
 	    };
@@ -162,9 +162,9 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
 	            try {
 	                processTimeouts();
 	            } catch (InterruptedException e) {
-                    errorf("Thread %s interrupted!", this);
+                    s_log.error("Thread {} interrupted!", this);
 	            } catch (Throwable t) {
-                    errorf(t, "Unexpected exception on Thread %s!", this);
+                    s_log.error("Unexpected exception on Thread " + this + "!", t);
 	            }
 	        }
 	    };
@@ -201,14 +201,14 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
         assertStarted();
         if (!m_requestLocator.trackRequest(request)) return;
         m_messenger.sendRequest(request);
-        debugf("Scheding timeout for request to %s in %d ms", request, request.getDelay(TimeUnit.MILLISECONDS));
+        s_log.debug("Scheding timeout for request to {} in {} ms", request, request.getDelay(TimeUnit.MILLISECONDS));
         m_timeoutQueue.offer(request);
     }
 
     private void processReplies() throws InterruptedException {
 	    while (true) {
 	        ReplyT reply = m_pendingReplyQueue.take();
-            debugf("Found a reply to process: %s", reply);
+            s_log.debug("Found a reply to process: {}", reply);
             
             ReqT request = locateMatchingRequest(reply);
 
@@ -217,7 +217,7 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
 	                m_requestLocator.requestComplete(request);
 	            }
 	        } else {
-	            debugf("No request found for reply %s", reply);
+	            s_log.debug("No request found for reply {}", reply);
 	        }
 	    }
     }
@@ -226,17 +226,17 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
         try {
             return m_requestLocator.locateMatchingRequest(reply);
         } catch (Throwable t) {
-            errorf(t, "Unexpected error locating response to request %s. Discarding response!", reply);
+            s_log.error("Unexpected error locating response to request " + reply + ". Discarding response!", t);
             return null;
         }
     }
 
     private boolean processReply(ReplyT reply, ReqT request) {
         try {
-            debugf("Processing reply %s for request %s", reply, request);
+            s_log.debug("Processing reply {} for request {}", reply, request);
             return request.processResponse(reply);
         } catch (Throwable t) {
-            errorf(t, "Unexpected error processingResponse to request: %s, reply is %s", request, reply);
+            s_log.error("Unexpected error processingResponse to request: " + request + ", reply is " + reply, t);
             // we should throw away the request if this happens
             return true;
         }
@@ -248,7 +248,7 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
 	            ReqT timedOutRequest = m_timeoutQueue.take();
 	            processNextTimeout(timedOutRequest);
 	        } catch (Throwable t) {
-	            errorf(t, "Unexpected error processingTimeout!");
+	            s_log.error("Unexpected error processingTimeout!", t);
 	        }
 	    }
 	}
@@ -262,7 +262,7 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
         }
         
         
-        debugf("Found a possibly timedout request: %s", timedOutRequest);
+        s_log.debug("Found a possibly timed-out request: {}", timedOutRequest);
         ReqT pendingRequest = m_requestLocator.requestTimedOut(timedOutRequest);
 
         if (pendingRequest == timedOutRequest) {
@@ -277,37 +277,18 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
             }
         } else if (pendingRequest != null) {
             String msg = String.format("A pending request %s with the same id exists but is not the timeout request %s from the queue!", pendingRequest, timedOutRequest);
-            errorf(msg);
+            s_log.error(msg);
             timedOutRequest.processError(new IllegalStateException(msg));
         }
 	}
 
     private ReqT processTimeout(ReqT request) {
         try {
-            debugf("Processing timeout for: %s", request);
+            s_log.debug("Processing timeout for: {}", request);
             return request.processTimeout();
         } catch (Throwable t) {
-            errorf(t, "Unexpected error processingTimout to request: %s", request);
+            s_log.error("Unexpected error processingTimout to request: " + request, t);
             return null;
         }
     }
-	
-    private Category log() {
-        return s_log;
-    }
-    
-    private void debugf(String format, Object... args) {
-        if (log().isDebugEnabled()) {
-            log().debug(String.format(format, args));
-        }
-    }
-
-    private void errorf(String format, Object... args) {
-        log().error(String.format(format, args));
-    }
-
-    private void errorf(Throwable t, String format, Object... args) {
-        log().error(String.format(format, args), t);
-    }
-
 }
