@@ -20,7 +20,6 @@
   <modules>
     <module>master</module>
     <module>org.opennms.lib</module>
-    <module>org.opennms.lib/service-registration</module>
     <module>org.opennms.lib/tracker</module>
   </modules>
 </project>
