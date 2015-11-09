@@ -31,7 +31,6 @@
  */
 package org.opennms.protocols.rt;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,7 +46,7 @@ public class IDBasedRequestLocator<ReqIdT, ReqT extends Request<ReqIdT, ReqT, Re
 
     private static final Logger s_log = LoggerFactory.getLogger(IDBasedRequestLocator.class);
     
-    private Map<ReqIdT, ReqT> m_pendingRequests = Collections.synchronizedMap(new HashMap<ReqIdT, ReqT>());
+    private Map<ReqIdT, ReqT> m_pendingRequests = new HashMap<ReqIdT, ReqT>();
     
     public ReqT requestTimedOut(ReqT timedOutRequest) {
         synchronized (m_pendingRequests) {
@@ -61,7 +60,9 @@ public class IDBasedRequestLocator<ReqIdT, ReqT extends Request<ReqIdT, ReqT, Re
     }
     
     public void requestComplete(ReqT request) {
-        m_pendingRequests.remove(request.getId());
+        synchronized (m_pendingRequests) {
+            m_pendingRequests.remove(request.getId());
+        }
     }
 
 
@@ -69,8 +70,9 @@ public class IDBasedRequestLocator<ReqIdT, ReqT extends Request<ReqIdT, ReqT, Re
 
         ReqIdT id = reply.getRequestId();
         s_log.debug("Looking for request with Id: {} in map {}", id, m_pendingRequests);
-        ReqT request = m_pendingRequests.get(id);
-        return request;
+        synchronized (m_pendingRequests) {
+            return m_pendingRequests.get(id);
+        }
 
     }
     
