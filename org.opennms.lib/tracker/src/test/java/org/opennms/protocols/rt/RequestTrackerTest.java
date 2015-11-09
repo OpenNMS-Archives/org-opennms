@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.Before;
 import org.junit.Test;
 
 
@@ -54,7 +55,13 @@ import org.junit.Test;
  * @author brozow
  */
 public class RequestTrackerTest {
-    
+
+    @Before
+    public void setUp() {
+        // Bump up the log level
+        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "TRACE");
+    }
+
     public static long TIMEOUT = 100;
     
     private static class TestReply implements ResponseWithId<Integer> {
@@ -471,4 +478,67 @@ public class RequestTrackerTest {
         assertSame(response, cb.response);
     }
 
+    private class DelayedCallback extends TestCallback {
+
+        private final long m_delay;
+
+        public DelayedCallback(long delay) {
+            m_delay = delay;
+        }
+
+        public void processResponse(TestRequest request, TestReply response) {
+            try {
+                Thread.sleep(m_delay);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            super.processResponse(request, response);
+        }
+    }
+
+    /**
+     * Verifies that we don't process the timeout when the reply is processing,
+     * or pending processing
+     */
+    @Test
+    public void testDelayedProcess() throws Exception {
+
+        final long REPLY_DELAY = TIMEOUT + 20;
+        final long PROCESS_TIME = TIMEOUT * 3;
+
+        DelayedTestMessenger messenger = new DelayedTestMessenger(REPLY_DELAY);
+        RequestTracker<TestRequest, TestReply> rt = new RequestTracker<TestRequest, TestReply>("Delayed", messenger, new IDBasedRequestLocator<Integer, TestRequest, TestReply>());
+
+        rt.start();
+
+        DelayedCallback cb = new DelayedCallback(PROCESS_TIME);
+        TestRequest req = new TestRequest(1, TIMEOUT, 1, cb);
+
+        rt.sendRequest(req);
+
+        // this gives the rt threads a chance to work
+        Thread.sleep(50);
+
+        // we haven't received the response yet
+        assertNull(cb.error);
+        assertNull(cb.timeoutTimestamp);
+        assertNull(cb.response);
+        assertEquals(0, cb.getCallbackCount());
+
+        // wait long enough for the delayed response to finish
+        Thread.sleep(PROCESS_TIME * 2);
+
+        // no error
+        assertNull(cb.error);
+        // no timeout
+        assertNull(cb.timeoutTimestamp);
+
+        // expect a reply
+        assertNotNull(cb.response);
+        assertNotNull(cb.responseTimestamp);
+
+        // assert reply has the same requestId
+        assertEquals(cb.request.getId(), cb.response.getRequestId());
+    }
 }
