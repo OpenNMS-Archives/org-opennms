@@ -38,7 +38,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.util.Queue;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
@@ -191,27 +190,27 @@ public class RequestTrackerTest {
     }
     
     private abstract static class TestMessenger implements Messenger<TestRequest, TestReply> {
-        private AtomicReference<Queue<TestReply>> m_queue = new AtomicReference<Queue<TestReply>>();
+        private AtomicReference<ReplyHandler<TestReply>> m_callback = new AtomicReference<ReplyHandler<TestReply>>();
         private AtomicInteger m_sendsRequested = new AtomicInteger();
         private AtomicInteger m_sendsPerformed = new AtomicInteger();
         
-        public void start(Queue<TestReply> q) {
-            if (!m_queue.compareAndSet(null, q)) {
+        public void start(ReplyHandler<TestReply> callback) {
+            if (!m_callback.compareAndSet(null, callback)) {
                 throw new IllegalStateException(getClass()+" is already started!");
             }
         }
 
-        private Queue<TestReply> getQueue() {
-            Queue<TestReply> q = m_queue.get();
-            assertNotNull(getClass()+" is not yet started!!!", q);
-            return q;
+        private ReplyHandler<TestReply> getCallback() {
+            ReplyHandler<TestReply> callback = m_callback.get();
+            assertNotNull(getClass()+" is not yet started!!!", callback);
+            return callback;
         }
         
         void doSend(TestRequest request) throws IOException {
-            Queue<TestReply> q = getQueue();
-            assertNotNull(getClass()+" is not yet started!!!", q);
+            ReplyHandler<TestReply> callback = getCallback();
+            assertNotNull(getClass()+" is not yet started!!!", callback);
             sendPerformed();
-            q.offer(new TestReply(request));
+            callback.handleReply(new TestReply(request));
         }
 
         private void sendPerformed() {
@@ -288,8 +287,8 @@ public class RequestTrackerTest {
             m_delay = delay;
         }
         
-        public void start(Queue<TestReply> replyQueue) {
-            super.start(replyQueue);
+        public void start(ReplyHandler<TestReply> callback) {
+            super.start(callback);
             
             new Thread(this,"Delayed-Replier").start();
         }

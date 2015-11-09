@@ -1,7 +1,7 @@
 /*
  * This file is part of the OpenNMS(R) Application.
  *
- * OpenNMS(R) is Copyright (C) 2009 The OpenNMS Group, Inc.  All rights reserved.
+ * OpenNMS(R) is Copyright (C) 2015 The OpenNMS Group, Inc.  All rights reserved.
  * OpenNMS(R) is a derivative work, containing both original code, included code and modified
  * code that was published under the GNU General Public License. Copyrights for modified
  * and included code are below.
@@ -31,23 +31,13 @@
  */
 package org.opennms.protocols.rt;
 
-
 /**
- * A class that represents a simple messaging interface.  This is possibly loss less and does not imply 
- * guaranteed deliver.  The only real requirements are those implied by the Request and Reply interfaces
+ * Callback method used by the {@link Messenger} when a reply is received.
  *
- * @author brozow
+ * @author jwhite
  */
-public interface Messenger<ReqT, ReplyT> {
-    
-    /**
-     * Send a message using the messenger service
-     */
-    public void sendRequest(ReqT request) throws Exception ;
-    
-    /**
-     * Start listening for replies and call the reply handler with any replies received.
-     */
-    public void start(ReplyHandler<ReplyT> callback);
+public interface ReplyHandler<ReplyT> {
+
+    public void handleReply(ReplyT reply);
 
 }

@@ -36,7 +36,9 @@
 package org.opennms.protocols.rt;
 
 import java.io.IOException;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -49,11 +51,12 @@ import org.slf4j.LoggerFactory;
  * 
  * Request Tracker Design
  * 
- * The request tracker has four components that are all static
+ * The request tracker has five components that are all static
  * 
  * a messenger
  * a pendingRequest map
  * a pendingReply queue (LinkedBlockingQueue)
+ * a requestIdsWithPendingReplies set
  * a timeout queue (DelayQueue)
  * 
  * It also has two threads:
@@ -73,19 +76,25 @@ import org.slf4j.LoggerFactory;
  * - add it to the timeout queue
  * 
  * Replies come from the messenger: 
- * - the messenger is 'started' by passing in the pendingReplyQueue
- * - as replies come in there are added to the pingingReplyQueue
- * 
+ * - the messenger is 'started' by passing in a reference to a callback
+ * - as replies come in, the callback is issued
+ * - the callback add the replies to the pendingReply queue, and if
+ *   the replies have associated request ids, the request ids are added to the
+ *   requestIdsWithPendingReplies set
+ *
  * Processing a reply: (reply processor)
  * - take a reply from the pendingReply queue
  * - look up and remove the matching request in the pendingRequest map
  * - call request.processReply(reply) - this will store the reply and
  *   call the handleReply call back
  * - pending request sets completed to true
+ * - removes the request id from the requestIdsWithPendingReplies set
  * 
  * Processing a timeout:
  * - take a request from the timeout queue
  * - if the request is completed discard it
+ * - if requestIdsWithPendingReplies contains the request id, meaning we've
+ *   received a reply but haven't processed it yet, discard the timeout
  * - otherwise, call request.processTimeout(), this will check the number
  *   of retries and either return a new request with fewer retries or
  *   call the handleTimeout call back
@@ -115,15 +124,16 @@ import org.slf4j.LoggerFactory;
  * 
  * @author <a href="mailto:brozow@opennms.org">Mathew Brozowski</a>
  */
-public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extends Response> {
+public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extends Response> implements ReplyHandler<ReplyT> {
     
     private static final Logger s_log = LoggerFactory.getLogger(RequestTracker.class);
     
     private RequestLocator<ReqT, ReplyT> m_requestLocator;
     private Messenger<ReqT, ReplyT> m_messenger;
+    private final Set<Object> m_requestIdsWithPendingReplies;
     private BlockingQueue<ReplyT> m_pendingReplyQueue;
     private DelayQueue<ReqT> m_timeoutQueue;
-    
+
     private Thread m_replyProcessor;
     private Thread m_timeoutProcessor;
     
@@ -132,7 +142,6 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
     private static final int STARTED = 2;
     
     private AtomicInteger m_state = new AtomicInteger(NEW);
-    
 
 	/**
      * Construct a RequestTracker that sends and received messages using the
@@ -143,8 +152,9 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
         
         m_requestLocator = requestLocator;
 	    m_pendingReplyQueue = new LinkedBlockingQueue<ReplyT>();
+	    m_requestIdsWithPendingReplies = new ConcurrentSkipListSet<Object>();
 	    m_timeoutQueue = new DelayQueue<ReqT>();
-	    
+
 	    m_replyProcessor = new Thread(name+"-Reply-Processor") {
 	        public void run() {
 	            try {
@@ -180,7 +190,7 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
     public synchronized void start() {
         boolean startNeeded = m_state.compareAndSet(NEW, STARTING);
         if (startNeeded) {
-            m_messenger.start(m_pendingReplyQueue);
+            m_messenger.start(this);
             m_timeoutProcessor.start();
             m_replyProcessor.start();
             m_state.set(STARTED);
@@ -205,6 +215,15 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
         m_timeoutQueue.offer(request);
     }
 
+    public void handleReply(ReplyT reply) {
+        m_pendingReplyQueue.offer(reply);
+
+        // Only track the request id, if the reply supports it
+        if (reply instanceof ResponseWithId) {
+            m_requestIdsWithPendingReplies.add(((ResponseWithId<?>) reply).getRequestId());
+        }
+    }
+
     private void processReplies() throws InterruptedException {
 	    while (true) {
 	        ReplyT reply = m_pendingReplyQueue.take();
@@ -216,6 +235,8 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
 	            if (processReply(reply, request)) {
 	                m_requestLocator.requestComplete(request);
 	            }
+
+	            m_requestIdsWithPendingReplies.remove(request.getId());
 	        } else {
 	            s_log.debug("No request found for reply {}", reply);
 	        }
@@ -252,21 +273,30 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
 	        }
 	    }
 	}
-	
+
 	private void processNextTimeout(ReqT timedOutRequest) {
-	    
-        
+
         // do nothing is the request has already been processed.
         if (timedOutRequest.isProcessed()) {
             return;
         }
-        
-        
+
         s_log.debug("Found a possibly timed-out request: {}", timedOutRequest);
         ReqT pendingRequest = m_requestLocator.requestTimedOut(timedOutRequest);
 
         if (pendingRequest == timedOutRequest) {
-            // then this request is still pending so we must time it out
+            // the request is still pending
+
+            // is there a pending reply that we haven't processed yet?
+            if (m_requestIdsWithPendingReplies.contains(timedOutRequest.getId())) {
+                // There is a reply pending in the reply queue, but we haven't
+                // had a chance to process it yet. Wait for the Reply Processor thread
+                // to process the response instead of the processing the timeout
+                s_log.info("A timeout was issued while the reply is pending processing for: {}", timedOutRequest);
+                return;
+            }
+
+            // we must time it out
             ReqT retry = processTimeout(timedOutRequest);
             if (retry != null) {
                 try {
@@ -291,4 +321,5 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
             return null;
         }
     }
+
 }
