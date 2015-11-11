@@ -36,9 +36,9 @@
 package org.opennms.protocols.rt;
 
 import java.io.IOException;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -130,7 +130,7 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
     
     private RequestLocator<ReqT, ReplyT> m_requestLocator;
     private Messenger<ReqT, ReplyT> m_messenger;
-    private final Set<Object> m_requestIdsWithPendingReplies;
+    private final Map<Object, Boolean> m_requestIdsWithPendingReplies;
     private BlockingQueue<ReplyT> m_pendingReplyQueue;
     private DelayQueue<ReqT> m_timeoutQueue;
 
@@ -152,7 +152,7 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
         
         m_requestLocator = requestLocator;
 	    m_pendingReplyQueue = new LinkedBlockingQueue<ReplyT>();
-	    m_requestIdsWithPendingReplies = new ConcurrentSkipListSet<Object>();
+	    m_requestIdsWithPendingReplies = new ConcurrentHashMap<Object, Boolean>();
 	    m_timeoutQueue = new DelayQueue<ReqT>();
 
 	    m_replyProcessor = new Thread(name+"-Reply-Processor") {
@@ -220,7 +220,7 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
 
         // Only track the request id, if the reply supports it
         if (reply instanceof ResponseWithId) {
-            m_requestIdsWithPendingReplies.add(((ResponseWithId<?>) reply).getRequestId());
+            m_requestIdsWithPendingReplies.put(((ResponseWithId<?>) reply).getRequestId(), Boolean.TRUE);
         }
     }
 
@@ -288,7 +288,7 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
             // the request is still pending
 
             // is there a pending reply that we haven't processed yet?
-            if (m_requestIdsWithPendingReplies.contains(timedOutRequest.getId())) {
+            if (m_requestIdsWithPendingReplies.containsKey(timedOutRequest.getId())) {
                 // There is a reply pending in the reply queue, but we haven't
                 // had a chance to process it yet. Wait for the Reply Processor thread
                 // to process the response instead of the processing the timeout
