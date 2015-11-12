@@ -69,8 +69,8 @@ public class IDBasedRequestLocator<ReqIdT, ReqT extends Request<ReqIdT, ReqT, Re
     public ReqT locateMatchingRequest(ReplyT reply) {
 
         ReqIdT id = reply.getRequestId();
-        s_log.debug("Looking for request with Id: {} in map {}", id, m_pendingRequests);
         synchronized (m_pendingRequests) {
+            s_log.debug("Looking for request with Id: {} in map {}", id, m_pendingRequests);
             return m_pendingRequests.get(id);
         }
 
