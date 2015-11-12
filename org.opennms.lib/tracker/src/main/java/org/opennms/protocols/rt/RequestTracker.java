@@ -238,7 +238,7 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
 
 	            m_requestIdsWithPendingReplies.remove(request.getId());
 	        } else {
-	            s_log.debug("No request found for reply {}", reply);
+	            s_log.info("No request found for reply {}", reply);
 	        }
 	    }
     }
