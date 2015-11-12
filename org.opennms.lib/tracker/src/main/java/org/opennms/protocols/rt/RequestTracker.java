@@ -235,11 +235,15 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
 	            if (processReply(reply, request)) {
 	                m_requestLocator.requestComplete(request);
 	            }
-
-	            m_requestIdsWithPendingReplies.remove(request.getId());
 	        } else {
 	            s_log.info("No request found for reply {}", reply);
 	        }
+
+            // Remove the id from the set of pending replies
+            // Do this regardless of whether or not we found a matching request
+            if (reply instanceof ResponseWithId) {
+                m_requestIdsWithPendingReplies.remove(((ResponseWithId<?>) reply).getRequestId());
+            }
 	    }
     }
 
