@@ -36,9 +36,8 @@
 package org.opennms.protocols.rt;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Callable;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -51,66 +50,68 @@ import org.slf4j.LoggerFactory;
  * 
  * Request Tracker Design
  * 
- * The request tracker has five components that are all static
+ * The request tracker has four components that are all static
  * 
  * a messenger
- * a pendingRequest map
- * a pendingReply queue (LinkedBlockingQueue)
- * a requestIdsWithPendingReplies set
+ * a pending requests map
+ * a callback queue (LinkedBlockingQueue)
  * a timeout queue (DelayQueue)
  * 
  * It also has two threads:
  * 
- * a thread to process the pendingReplyQueue - (icmp reply processor)
- * a thread to process the timeouts (icmp timeout processor)
+ * a thread to process the callbacks (Callback-Processor)
+ * a thread to process the timeouts (Timeout-Processor)
+ *
+ * Thread Details:
+ *
+ * 1.  The callback processor thread is responsible for handling all of the callbacks to
+ *     the request object. This thread will pull callbacks off the linked blocking queue
+ *     and issue the call in the order in which they were added.
  * 
+ *     All of the callback are handled from a single thread in order to avoid synchronization
+ *     issue in processing the replies and responses. In the versions of the tracker before 0.7, 
+ *     it was possible for RequestTracker to receive a reply, but issue the timeout before it had
+ *     a chance to process it.
+ *
+ * 2.  The timeout processor is only responsible creating callbacks for timeouts, and adding these
+ *     to the callback queue when timeouts occur. The timeout processor pulls the requests off a DelayQueue
+ *     and creates a callback if the request had not yet been processed. Note that a DelayQueue does not allow
+ *     things to be removed until the timeout has expired.
+ *
  * Processing:
  * 
  * All requests are asynchronous (if synchronous requests are need that
  * are implemented using asynchronous requests and blocking callbacks)
  * 
  * Making a request: (client thread)
- * - create a request (client does this) 
- * - add it to a pendingRequestMap
+ * - create a request (client does this)
  * - send the request (via the Messenger)
  * - add it to the timeout queue
- * 
- * Replies come from the messenger: 
- * - the messenger is 'started' by passing in a reference to a callback
- * - as replies come in, the callback is issued
- * - the callback add the replies to the pendingReply queue, and if
- *   the replies have associated request ids, the request ids are added to the
- *   requestIdsWithPendingReplies set
  *
- * Processing a reply: (reply processor)
- * - take a reply from the pendingReply queue
- * - look up and remove the matching request in the pendingRequest map
- * - call request.processReply(reply) - this will store the reply and
- *   call the handleReply call back
- * - pending request sets completed to true
- * - removes the request id from the requestIdsWithPendingReplies set
- * 
- * Processing a timeout:
+ * Replies come from the messenger:
+ * - as replies come in, the messenger invokes the handleReply method on the request tracker
+ *   (which was passed during initializing)
+ * - the handleReply method adds a callback that will process the reply to the callback queue
+ * - when called, this callback will:
+ * -- look up and remove the matching request in the pendingRequest map
+ * -- call request.processReply(reply) - this will store the reply and
+ * -- call the handleReply call back
+ * -- pending request sets completed to true
+ *
+ * Processing a timeout: (Timeout-Processor)
  * - take a request from the timeout queue
  * - if the request is completed discard it
- * - if requestIdsWithPendingReplies contains the request id, meaning we've
- *   received a reply but haven't processed it yet, discard the timeout
- * - otherwise, call request.processTimeout(), this will check the number
- *   of retries and either return a new request with fewer retries or
- *   call the handleTimeout call back
- * - if processTimeout returns a new request than process it as in Making
- *   a request 
- * 
- * Thread Details:
- * 
- * 1.  The reply processor that will pull replies off the linked
- *     blocking queue and process them.  This will result in calling the
- *     PingResponseCallback handleReply method.
- * 
- * 2.  The timeout processor that will pull PingRequests off of a
- *     DelayQueue.  A DelayQueue does not allow things to be removed from
- *     them until the timeout has expired.
- * 
+ * - add a callback to the callback queue process the timedout request:
+ * - when called, this callback will:
+ * -- discard the request if it was completed
+ * -- call request.processTimeout(), this will check the number
+ *    of retries and either return a new request with fewer retries or
+ *    call the handleTimeout call back
+ * -- if processTimeout returns a new request than process it as in Making a request
+ *
+ * Processing a callback: (Callback-Processor)
+ * - take a callback from the callbackQueue queue
+ * - issue the callback
  */
 
 /**
@@ -121,7 +122,8 @@ import org.slf4j.LoggerFactory;
  * have one of its process method called no matter what happens. This makes it
  * easier to write code because some kind of indication is always provided and
  * so timing out is not needed in the client.
- * 
+ *
+ * @author jwhite
  * @author <a href="mailto:brozow@opennms.org">Mathew Brozowski</a>
  */
 public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extends Response> implements ReplyHandler<ReplyT> {
@@ -130,11 +132,10 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
     
     private RequestLocator<ReqT, ReplyT> m_requestLocator;
     private Messenger<ReqT, ReplyT> m_messenger;
-    private final Map<Object, Boolean> m_requestIdsWithPendingReplies;
-    private BlockingQueue<ReplyT> m_pendingReplyQueue;
+    private final BlockingQueue<Callable<Void>> m_callbackQueue;
     private DelayQueue<ReqT> m_timeoutQueue;
 
-    private Thread m_replyProcessor;
+    private Thread m_callbackProcessor;
     private Thread m_timeoutProcessor;
     
     private static final int NEW = 0;
@@ -151,14 +152,13 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
     public RequestTracker(String name, Messenger<ReqT, ReplyT> messenger, RequestLocator<ReqT, ReplyT> requestLocator) throws IOException {
         
         m_requestLocator = requestLocator;
-	    m_pendingReplyQueue = new LinkedBlockingQueue<ReplyT>();
-	    m_requestIdsWithPendingReplies = new ConcurrentHashMap<Object, Boolean>();
+        m_callbackQueue = new LinkedBlockingQueue<Callable<Void>>();
 	    m_timeoutQueue = new DelayQueue<ReqT>();
 
-	    m_replyProcessor = new Thread(name+"-Reply-Processor") {
+	    m_callbackProcessor = new Thread(name+"-Callback-Processor") {
 	        public void run() {
 	            try {
-	                processReplies();
+	                processCallbacks();
 	            } catch (InterruptedException e) {
                     s_log.error("Thread {} interrupted!", this);
 	            } catch (Throwable t) {
@@ -166,7 +166,7 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
 	            }
 	        }
 	    };
-	    
+
 	    m_timeoutProcessor = new Thread(name+"-Timeout-Processor") {
 	        public void run() {
 	            try {
@@ -180,7 +180,6 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
 	    };
 	    
         m_messenger = messenger;
-
 	}
     
     /**
@@ -192,11 +191,11 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
         if (startNeeded) {
             m_messenger.start(this);
             m_timeoutProcessor.start();
-            m_replyProcessor.start();
+            m_callbackProcessor.start();
             m_state.set(STARTED);
         }
     }
-    
+
     public void assertStarted() {
         boolean started = m_state.get() == STARTED;
         if (!started) throw new IllegalStateException("RequestTracker not started!");
@@ -215,36 +214,13 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
         m_timeoutQueue.offer(request);
     }
 
-    public void handleReply(ReplyT reply) {
-        m_pendingReplyQueue.offer(reply);
-
-        // Only track the request id, if the reply supports it
-        if (reply instanceof ResponseWithId) {
-            m_requestIdsWithPendingReplies.put(((ResponseWithId<?>) reply).getRequestId(), Boolean.TRUE);
-        }
-    }
-
-    private void processReplies() throws InterruptedException {
-	    while (true) {
-	        ReplyT reply = m_pendingReplyQueue.take();
-            s_log.debug("Found a reply to process: {}", reply);
-            
-            ReqT request = locateMatchingRequest(reply);
-
-            if (request != null) {
-	            if (processReply(reply, request)) {
-	                m_requestLocator.requestComplete(request);
-	            }
-	        } else {
-	            s_log.info("No request found for reply {}", reply);
-	        }
-
-            // Remove the id from the set of pending replies
-            // Do this regardless of whether or not we found a matching request
-            if (reply instanceof ResponseWithId) {
-                m_requestIdsWithPendingReplies.remove(((ResponseWithId<?>) reply).getRequestId());
+    public void handleReply(final ReplyT reply) {
+        m_callbackQueue.add(new Callable<Void>() {
+            public Void call() throws Exception {
+                onProcessReply(reply);
+                return null;
             }
-	    }
+        });
     }
 
     private ReqT locateMatchingRequest(ReplyT reply) {
@@ -256,52 +232,82 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
         }
     }
 
-    private boolean processReply(ReplyT reply, ReqT request) {
-        try {
-            s_log.debug("Processing reply {} for request {}", reply, request);
-            return request.processResponse(reply);
-        } catch (Throwable t) {
-            s_log.error("Unexpected error processingResponse to request: " + request + ", reply is " + reply, t);
-            // we should throw away the request if this happens
-            return true;
+    private void processCallbacks() throws InterruptedException {
+        while (true) {
+            Callable<Void> callback = m_callbackQueue.take();
+            try {
+                callback.call();
+            } catch (Exception e) {
+                s_log.error("Failed to issue callback {}.", callback, e);
+            }
         }
     }
 
 	private void processTimeouts() throws InterruptedException {  
 	    while (true) {
-	        try {
-	            ReqT timedOutRequest = m_timeoutQueue.take();
-	            processNextTimeout(timedOutRequest);
-	        } catch (Throwable t) {
-	            s_log.error("Unexpected error processingTimeout!", t);
-	        }
+            final ReqT timedOutRequest = m_timeoutQueue.take();
+
+            // do nothing is the request has already been processed
+            if (timedOutRequest.isProcessed()) {
+                continue;
+            }
+
+            // the request hasn't been processed yet, but we'll
+            // check again when the callback is issued
+            m_callbackQueue.add(new Callable<Void>() {
+                public Void call() throws Exception {
+                    onProcessTimeout(timedOutRequest);
+                    return null;
+                }
+            });
 	    }
 	}
 
-	private void processNextTimeout(ReqT timedOutRequest) {
+	private void onProcessReply(ReplyT reply) {
+	    s_log.debug("Processing reply: {}", reply);
 
+        ReqT request = locateMatchingRequest(reply);
+
+        if (request != null) {
+            boolean isComplete;
+
+            try {
+                s_log.debug("Processing reply {} for request {}", reply, request);
+                isComplete = request.processResponse(reply);
+            } catch (Throwable t) {
+                s_log.error("Unexpected error processingResponse to request: {}, reply is {}", request, reply, t);
+                // we should throw away the request if this happens
+                isComplete = true;
+            }
+
+            if (isComplete) {
+                m_requestLocator.requestComplete(request);
+            }
+        } else {
+            s_log.info("No request found for reply {}", reply);
+        }
+	}
+
+    private void onProcessTimeout(ReqT timedOutRequest) {
         // do nothing is the request has already been processed.
         if (timedOutRequest.isProcessed()) {
             return;
         }
 
-        s_log.debug("Found a possibly timed-out request: {}", timedOutRequest);
+        s_log.debug("Processing a possibly timed-out request: {}", timedOutRequest);
         ReqT pendingRequest = m_requestLocator.requestTimedOut(timedOutRequest);
 
         if (pendingRequest == timedOutRequest) {
-            // the request is still pending
-
-            // is there a pending reply that we haven't processed yet?
-            if (m_requestIdsWithPendingReplies.containsKey(timedOutRequest.getId())) {
-                // There is a reply pending in the reply queue, but we haven't
-                // had a chance to process it yet. Wait for the Reply Processor thread
-                // to process the response instead of the processing the timeout
-                s_log.info("A timeout was issued while the reply is pending processing for: {}", timedOutRequest);
-                return;
+            // the request is still pending, we must time it out
+            ReqT retry = null;
+            try {
+                s_log.debug("Processing timeout for: {}", timedOutRequest);
+                retry = timedOutRequest.processTimeout();
+            } catch (Throwable t) {
+                s_log.error("Unexpected error processingTimout to request: {}", timedOutRequest, t);
+                retry = null;
             }
 
-            // we must time it out
-            ReqT retry = processTimeout(timedOutRequest);
             if (retry != null) {
                 try {
                     sendRequest(retry);
@@ -314,16 +320,5 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
             s_log.error(msg);
             timedOutRequest.processError(new IllegalStateException(msg));
         }
-	}
-
-    private ReqT processTimeout(ReqT request) {
-        try {
-            s_log.debug("Processing timeout for: {}", request);
-            return request.processTimeout();
-        } catch (Throwable t) {
-            s_log.error("Unexpected error processingTimout to request: " + request, t);
-            return null;
-        }
     }
-
 }
