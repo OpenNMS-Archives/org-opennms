@@ -2,12 +2,12 @@
   <parent>
     <groupId>org.opennms</groupId>
     <artifactId>org.opennms.lib</artifactId>
-    <version>6</version>
+    <version>7-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.opennms.lib</groupId>
   <artifactId>org.opennms.lib.tracker</artifactId>
-  <version>0.7</version>
+  <version>0.8-SNAPSHOT</version>
   <name>OpenNMS Utils for Message Tracking</name>
   <packaging>bundle</packaging>
 

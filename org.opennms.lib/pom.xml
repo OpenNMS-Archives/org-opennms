@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.opennms</groupId>
     <artifactId>master</artifactId>
-    <version>6</version>
+    <version>7-SNAPSHOT</version>
     <relativePath>../master</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
