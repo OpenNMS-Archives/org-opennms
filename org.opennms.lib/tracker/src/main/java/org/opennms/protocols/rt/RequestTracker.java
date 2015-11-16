@@ -215,22 +215,23 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
     }
 
     public void handleReply(final ReplyT reply) {
-        m_callbackQueue.add(new Callable<Void>() {
-            public Void call() throws Exception {
-                onProcessReply(reply);
-                return null;
-            }
-        });
+        m_callbackQueue.add(new ReplyCallback<ReqT, ReplyT>(m_requestLocator, reply));
     }
 
-    private ReqT locateMatchingRequest(ReplyT reply) {
-        try {
-            return m_requestLocator.locateMatchingRequest(reply);
-        } catch (Throwable t) {
-            s_log.error("Unexpected error locating response to request " + reply + ". Discarding response!", t);
-            return null;
-        }
-    }
+	private void processTimeouts() throws InterruptedException {
+	    while (true) {
+            final ReqT timedOutRequest = m_timeoutQueue.take();
+
+            // do nothing is the request has already been processed
+            if (timedOutRequest.isProcessed()) {
+                continue;
+            }
+
+            // the request hasn't been processed yet, but we'll
+            // check again when the callback is issued
+            m_callbackQueue.add(new TimedOutRequestCallback<ReqT, ReplyT>(this, m_requestLocator, timedOutRequest));
+	    }
+	}
 
     private void processCallbacks() throws InterruptedException {
         while (true) {
@@ -243,82 +244,99 @@ public class RequestTracker<ReqT extends Request<?, ReqT, ReplyT>, ReplyT extend
         }
     }
 
-	private void processTimeouts() throws InterruptedException {  
-	    while (true) {
-            final ReqT timedOutRequest = m_timeoutQueue.take();
+	public static class ReplyCallback<ReqT extends Request<?, ?, ReplyT>, ReplyT> implements Callable<Void> {
 
-            // do nothing is the request has already been processed
-            if (timedOutRequest.isProcessed()) {
-                continue;
-            }
+	    private final RequestLocator<ReqT, ReplyT> m_requestLocator;
+	    private final ReplyT m_reply;
 
-            // the request hasn't been processed yet, but we'll
-            // check again when the callback is issued
-            m_callbackQueue.add(new Callable<Void>() {
-                public Void call() throws Exception {
-                    onProcessTimeout(timedOutRequest);
-                    return null;
-                }
-            });
+	    public ReplyCallback(RequestLocator<ReqT, ReplyT> requestLocator, ReplyT reply) {
+	        m_requestLocator = requestLocator;
+	        m_reply = reply;
 	    }
-	}
 
-	private void onProcessReply(ReplyT reply) {
-	    s_log.debug("Processing reply: {}", reply);
+        public Void call() throws Exception {
+            s_log.debug("Processing reply: {}", m_reply);
 
-        ReqT request = locateMatchingRequest(reply);
+            ReqT request = locateMatchingRequest(m_reply);
 
-        if (request != null) {
-            boolean isComplete;
+            if (request != null) {
+                boolean isComplete;
 
-            try {
-                s_log.debug("Processing reply {} for request {}", reply, request);
-                isComplete = request.processResponse(reply);
-            } catch (Throwable t) {
-                s_log.error("Unexpected error processingResponse to request: {}, reply is {}", request, reply, t);
-                // we should throw away the request if this happens
-                isComplete = true;
-            }
-
-            if (isComplete) {
-                m_requestLocator.requestComplete(request);
-            }
-        } else {
-            s_log.info("No request found for reply {}", reply);
-        }
-	}
-
-    private void onProcessTimeout(ReqT timedOutRequest) {
-        // do nothing is the request has already been processed.
-        if (timedOutRequest.isProcessed()) {
-            return;
-        }
-
-        s_log.debug("Processing a possibly timed-out request: {}", timedOutRequest);
-        ReqT pendingRequest = m_requestLocator.requestTimedOut(timedOutRequest);
-
-        if (pendingRequest == timedOutRequest) {
-            // the request is still pending, we must time it out
-            ReqT retry = null;
-            try {
-                s_log.debug("Processing timeout for: {}", timedOutRequest);
-                retry = timedOutRequest.processTimeout();
-            } catch (Throwable t) {
-                s_log.error("Unexpected error processingTimout to request: {}", timedOutRequest, t);
-                retry = null;
-            }
-
-            if (retry != null) {
                 try {
-                    sendRequest(retry);
-                } catch (Exception e) {
-                    retry.processError(e);
+                    s_log.debug("Processing reply {} for request {}", m_reply, request);
+                    isComplete = request.processResponse(m_reply);
+                } catch (Throwable t) {
+                    s_log.error("Unexpected error processingResponse to request: {}, reply is {}", request, m_reply, t);
+                    // we should throw away the request if this happens
+                    isComplete = true;
                 }
+
+                if (isComplete) {
+                    m_requestLocator.requestComplete(request);
+                }
+            } else {
+                s_log.info("No request found for reply {}", m_reply);
             }
-        } else if (pendingRequest != null) {
-            String msg = String.format("A pending request %s with the same id exists but is not the timeout request %s from the queue!", pendingRequest, timedOutRequest);
-            s_log.error(msg);
-            timedOutRequest.processError(new IllegalStateException(msg));
+
+            return null;
         }
-    }
+
+        private ReqT locateMatchingRequest(ReplyT reply) {
+            try {
+                return m_requestLocator.locateMatchingRequest(reply);
+            } catch (Throwable t) {
+                s_log.error("Unexpected error locating response to request " + reply + ". Discarding response!", t);
+                return null;
+            }
+        }
+	}
+
+	public static class TimedOutRequestCallback<ReqT extends Request<?, ReqT, ?>, ReplyT> implements Callable<Void> {
+
+	    private final RequestTracker<ReqT, ?> m_tracker;
+        private final RequestLocator<ReqT, ReplyT> m_requestLocator;
+	    private final ReqT m_timedOutRequest;
+
+        public TimedOutRequestCallback(RequestTracker<ReqT, ?> tracker, RequestLocator<ReqT, ReplyT> requestLocator, ReqT timedOutRequest) {
+            m_tracker = tracker;
+            m_requestLocator = requestLocator;
+            m_timedOutRequest = timedOutRequest;
+        }
+
+        public Void call() throws Exception {
+            // do nothing is the request has already been processed.
+            if (m_timedOutRequest.isProcessed()) {
+                return null;
+            }
+
+            s_log.debug("Processing a possibly timed-out request: {}", m_timedOutRequest);
+            ReqT pendingRequest = m_requestLocator.requestTimedOut(m_timedOutRequest);
+
+            if (pendingRequest == m_timedOutRequest) {
+                // the request is still pending, we must time it out
+                ReqT retry = null;
+                try {
+                    s_log.debug("Processing timeout for: {}", m_timedOutRequest);
+                    retry = m_timedOutRequest.processTimeout();
+                } catch (Throwable t) {
+                    s_log.error("Unexpected error processingTimout to request: {}", m_timedOutRequest, t);
+                    retry = null;
+                }
+
+                if (retry != null) {
+                    try {
+                        m_tracker.sendRequest(retry);
+                    } catch (Exception e) {
+                        retry.processError(e);
+                    }
+                }
+            } else if (pendingRequest != null) {
+                String msg = String.format("A pending request %s with the same id exists but is not the timeout request %s from the queue!", pendingRequest, m_timedOutRequest);
+                s_log.error(msg);
+                m_timedOutRequest.processError(new IllegalStateException(msg));
+            }
+
+            return null;
+        }
+	}
 }
